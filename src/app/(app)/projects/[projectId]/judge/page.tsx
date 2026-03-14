@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, BarChart3, Loader2, Trophy, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowLeft, BarChart3, ChevronDown, ChevronUp, Loader2, Trophy, TrendingUp, AlertCircle } from "lucide-react";
+import { useState } from "react";
 
 export default function JudgePage() {
   const params = useParams();
@@ -34,6 +35,7 @@ export default function JudgePage() {
 
   const score = runJudge.data?.score;
   const pastScores = project?.scores || [];
+  const [expandedScore, setExpandedScore] = useState<string | null>(null);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -168,16 +170,77 @@ export default function JudgePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {pastScores.map((s: any) => (
-                <div key={s.id} className="flex items-center justify-between text-sm p-2 rounded border">
-                  <span className="text-muted-foreground">
-                    {new Date(s.createdAt).toLocaleDateString()}
-                  </span>
-                  <Badge variant="secondary">
-                    {Math.round(s.totalScore)}/{s.maxScore}
-                  </Badge>
-                </div>
-              ))}
+              {pastScores.map((s: any) => {
+                const isExpanded = expandedScore === s.id;
+                const categories = s.categoriesJson ? (typeof s.categoriesJson === "string" ? JSON.parse(s.categoriesJson) : s.categoriesJson) : [];
+                return (
+                  <div key={s.id} className="rounded border overflow-hidden">
+                    <button
+                      onClick={() => setExpandedScore(isExpanded ? null : s.id)}
+                      className="w-full flex items-center justify-between text-sm p-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="text-muted-foreground">
+                        {new Date(s.createdAt).toLocaleDateString()}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">
+                          {Math.round(s.totalScore)}/{s.maxScore}
+                        </Badge>
+                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3 border-t pt-3">
+                        {categories.length > 0 && (
+                          <div className="space-y-2">
+                            {categories.map((cat: any, i: number) => (
+                              <div key={i} className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="font-medium">{cat.name}</span>
+                                  <span>{cat.score}/{cat.maxPoints}</span>
+                                </div>
+                                <Progress value={(cat.score / cat.maxPoints) * 100} className="h-1.5" />
+                                {cat.feedback && <p className="text-xs text-muted-foreground">{cat.feedback}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {s.strengths && (
+                          <div>
+                            <p className="text-xs font-medium flex items-center gap-1 mb-1">
+                              <Trophy className="h-3 w-3 text-green-500" /> Strengths
+                            </p>
+                            <ul className="space-y-1">
+                              {(typeof s.strengths === "string" ? JSON.parse(s.strengths) : s.strengths).map((str: string, i: number) => (
+                                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                                  <TrendingUp className="h-3 w-3 mt-0.5 text-green-500 shrink-0" /> {str}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {s.improvements && (
+                          <div>
+                            <p className="text-xs font-medium flex items-center gap-1 mb-1">
+                              <AlertCircle className="h-3 w-3 text-yellow-500" /> Improvements
+                            </p>
+                            <ul className="space-y-1">
+                              {(typeof s.improvements === "string" ? JSON.parse(s.improvements) : s.improvements).map((imp: string, i: number) => (
+                                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                                  <AlertCircle className="h-3 w-3 mt-0.5 text-yellow-500 shrink-0" /> {imp}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {s.overallNotes && (
+                          <p className="text-xs text-muted-foreground italic">{s.overallNotes}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
