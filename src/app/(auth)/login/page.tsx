@@ -103,6 +103,10 @@ function LoginContent() {
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[hsl(220,60%,12%)] to-[hsl(220,70%,8%)] relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(220,80%,25%)_0%,transparent_60%)] opacity-50" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,hsl(220,80%,20%)_0%,transparent_60%)] opacity-30" />
+        {/* Large faded watermark logo */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Image src="/logo.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.06]" />
+        </div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
             <Image src="/logo-white.png" alt="Deca-Dex" width={40} height={40} className="w-10 h-10" />
