@@ -150,11 +150,16 @@ Competition date: ${competitionDate}
 Current progress: ${currentProgress}
 
 Create a realistic daily task schedule that:
+- Uses REAL calendar dates (YYYY-MM-DD format) starting from today
 - Breaks the project into manageable daily tasks
 - Includes research, writing, review, and practice phases
-- Accounts for the student being busy with school
+- Includes roleplay practice sessions and exam study time
+- Accounts for the student being busy with school (don't overload weekdays)
 - Front-loads the most important work
 - Includes buffer time for revisions
+- Ramps up practice frequency as competition approaches
+
+IMPORTANT: Every dueDate MUST be a real calendar date. Do NOT use placeholder dates.
 
 Return JSON array:
 [{

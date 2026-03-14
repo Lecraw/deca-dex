@@ -2,29 +2,26 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   Mic,
   Loader2,
-  RefreshCw,
-  Send,
   Trophy,
   AlertCircle,
   TrendingUp,
   ArrowLeft,
   Sparkles,
+  MessageSquare,
 } from "lucide-react";
 
 export default function RoleplayPage() {
+  const router = useRouter();
   const [selectedEvent, setSelectedEvent] = useState<string>("");
-  const [step, setStep] = useState<"select" | "scenario" | "feedback">("select");
-  const [scenario, setScenario] = useState("");
-  const [kpis, setKpis] = useState<string[]>([]);
-  const [response, setResponse] = useState("");
+  const [step, setStep] = useState<"select" | "loading">("select");
 
   const { data: events = [] } = useQuery({
     queryKey: ["events"],
@@ -36,54 +33,39 @@ export default function RoleplayPage() {
 
   const roleplayEvents = events.filter((e: any) => e.eventType === "ROLEPLAY");
 
-  const generateScenario = useMutation({
+  // Group events by category
+  const principlesEvents = roleplayEvents.filter((e: any) => e.category === "PRINCIPLES_EVENTS");
+  const individualEvents = roleplayEvents.filter((e: any) => e.category === "INDIVIDUAL_SERIES");
+  const teamEvents = roleplayEvents.filter((e: any) => e.category === "TEAM_DECISION_MAKING");
+  const otherEvents = roleplayEvents.filter(
+    (e: any) =>
+      e.category !== "PRINCIPLES_EVENTS" &&
+      e.category !== "INDIVIDUAL_SERIES" &&
+      e.category !== "TEAM_DECISION_MAKING"
+  );
+
+  const startSession = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/ai/roleplay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "generate_scenario",
+          action: "start_session",
           eventCode: selectedEvent,
         }),
       });
       return res.json();
     },
     onSuccess: (data) => {
-      setScenario(data.scenario || "");
-      setKpis(data.kpis || []);
-      setStep("scenario");
+      if (data.sessionId) {
+        router.push(`/roleplay/${data.sessionId}`);
+      }
     },
   });
 
-  const submitResponse = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/ai/roleplay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "evaluate_response",
-          eventCode: selectedEvent,
-          scenario,
-          kpis,
-          response,
-        }),
-      });
-      return res.json();
-    },
-    onSuccess: () => {
-      setStep("feedback");
-    },
-  });
-
-  const feedback = submitResponse.data;
-
-  const handleTryAgain = (newScenario: boolean) => {
-    setResponse("");
-    if (newScenario) {
-      generateScenario.mutate();
-    } else {
-      setStep("scenario");
-    }
+  const handleStart = () => {
+    setStep("loading");
+    startSession.mutate();
   };
 
   return (
@@ -91,285 +73,123 @@ export default function RoleplayPage() {
       <div>
         <h1 className="text-2xl font-bold">Roleplay Practice</h1>
         <p className="text-muted-foreground">
-          Practice your DECA roleplay events — write what you&apos;d say and get AI feedback
+          Practice DECA roleplays with speech — talk through your response and get AI judge feedback
         </p>
       </div>
 
-      {/* Step 1: Select Event */}
       {step === "select" && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* How it works */}
+          <Card className="bg-muted/50">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <Mic className="h-4 w-4 text-purple-500" />
+                How It Works
+              </h3>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Select your event and generate a scenario with performance indicators</li>
+                <li>Review the scenario during your 10-minute prep time</li>
+                <li>Press the mic button and speak your presentation — speech is transcribed live</li>
+                <li>The AI judge asks follow-up questions (you respond by speaking)</li>
+                <li>Get scored on each PI and 21st Century Skills, just like a real DECA judge</li>
+              </ol>
+            </CardContent>
+          </Card>
+
           <h2 className="font-semibold">Select an Event</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {roleplayEvents.map((event: any) => (
-              <Card
-                key={event.code}
-                className={`cursor-pointer transition-all ${
-                  selectedEvent === event.code
-                    ? "border-primary ring-2 ring-primary/20"
-                    : "hover:border-primary/50"
-                }`}
-                onClick={() => setSelectedEvent(event.code)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <Badge variant="outline" className="text-xs">{event.code}</Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {event.teamMin === 1 ? "Individual" : "Team"}
-                    </Badge>
-                  </div>
-                  <p className="font-medium text-sm">{event.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {event.prepMin} min prep · {event.presentationMin} min present
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
 
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => generateScenario.mutate()}
-            disabled={!selectedEvent || generateScenario.isPending}
-          >
-            {generateScenario.isPending ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating scenario...</>
-            ) : (
-              <><Sparkles className="h-4 w-4 mr-2" /> Generate Roleplay Scenario</>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {/* Step 2: Scenario + Write Response */}
-      {step === "scenario" && (
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setStep("select"); setScenario(""); setKpis([]); setResponse(""); }}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Events
-          </Button>
-
-          <Card className="bg-muted/50 border-primary/20">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Mic className="h-5 w-5 text-purple-500" />
-                <CardTitle className="text-base">Your Scenario</CardTitle>
-              </div>
-              <CardDescription>
-                Read the scenario below, then write what you would say to the judge
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{scenario}</p>
-            </CardContent>
-          </Card>
-
-          {/* KPIs */}
-          {kpis.length > 0 && (
-            <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-blue-500" /> Key Performance Indicators (KPIs)
-                </CardTitle>
-                <CardDescription>
-                  The judge will evaluate your response on these 4 KPIs — each worth 25 points
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ol className="space-y-2">
-                  {kpis.map((kpi, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm">
-                      <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold">
-                        {i + 1}
-                      </span>
-                      <span>{kpi}</span>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Your Response</label>
-            <p className="text-xs text-muted-foreground">
-              Write everything you would say to the judge — your presentation, answers, and key points
-            </p>
-            <Textarea
-              placeholder="Type what you would say in this roleplay scenario..."
-              value={response}
-              onChange={(e) => setResponse(e.target.value)}
-              rows={12}
-              className="text-sm"
-            />
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{response.split(/\s+/).filter(Boolean).length} words</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => generateScenario.mutate()}
-                disabled={generateScenario.isPending}
-              >
-                <RefreshCw className="h-3 w-3 mr-1" /> New Scenario
-              </Button>
-            </div>
-          </div>
-
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => submitResponse.mutate()}
-            disabled={!response.trim() || submitResponse.isPending}
-          >
-            {submitResponse.isPending ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Evaluating your response...</>
-            ) : (
-              <><Send className="h-4 w-4 mr-2" /> Submit for AI Feedback</>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {/* Step 3: Feedback */}
-      {step === "feedback" && feedback && (
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setStep("select"); setScenario(""); setKpis([]); setResponse(""); }}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Events
-          </Button>
-
-          {/* Score */}
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-5xl font-bold">
-                {feedback.score}
-                <span className="text-2xl text-muted-foreground">/100</span>
-              </CardTitle>
-              <CardDescription>Roleplay Performance Score</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Progress value={feedback.score} className="h-3" />
-            </CardContent>
-          </Card>
-
-          {/* Overall Feedback */}
-          {feedback.overallFeedback && (
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-sm">{feedback.overallFeedback}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* KPI Scores */}
-          {feedback.kpiScores && feedback.kpiScores.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-blue-500" /> KPI Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {feedback.kpiScores.map((kpi: any, i: number) => (
-                  <div key={i} className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">
-                        <span className="text-muted-foreground mr-1">KPI {i + 1}:</span>
-                        {kpi.kpi}
-                      </p>
-                      <Badge variant={kpi.score >= 20 ? "default" : kpi.score >= 15 ? "secondary" : "destructive"}>
-                        {kpi.score}/25
-                      </Badge>
-                    </div>
-                    <Progress value={(kpi.score / 25) * 100} className="h-2" />
-                    <p className="text-xs text-muted-foreground">{kpi.feedback}</p>
-                  </div>
+          {/* Principles Events */}
+          {principlesEvents.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Principles Events (4 PIs · 10 min prep · 10 min present)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {principlesEvents.map((event: any) => (
+                  <EventCard key={event.code} event={event} selected={selectedEvent === event.code} onSelect={setSelectedEvent} />
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
-          {/* Strengths & Improvements */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-green-500" /> Strengths
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {(feedback.strengths || []).map((s: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-green-500 shrink-0" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-yellow-500" /> Areas to Improve
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {(feedback.improvements || []).map((s: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-yellow-500 shrink-0" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Tips */}
-          {feedback.tips && feedback.tips.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Tips for Next Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {feedback.tips.map((tip: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <Sparkles className="h-3.5 w-3.5 mt-0.5 text-purple-500 shrink-0" />
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+          {/* Individual Series */}
+          {individualEvents.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Individual Series (5 PIs · 10 min prep · 10 min present)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {individualEvents.map((event: any) => (
+                  <EventCard key={event.code} event={event} selected={selectedEvent === event.code} onSelect={setSelectedEvent} />
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* Try Again */}
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => handleTryAgain(false)}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" /> Try Same Scenario
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={() => handleTryAgain(true)}
-            >
-              <Sparkles className="h-4 w-4 mr-2" /> New Scenario
-            </Button>
-          </div>
+          {/* Team Decision Making */}
+          {teamEvents.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Team Decision Making (7 PIs · 30 min)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {teamEvents.map((event: any) => (
+                  <EventCard key={event.code} event={event} selected={selectedEvent === event.code} onSelect={setSelectedEvent} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Other events */}
+          {otherEvents.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Other Events</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {otherEvents.map((event: any) => (
+                  <EventCard key={event.code} event={event} selected={selectedEvent === event.code} onSelect={setSelectedEvent} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={handleStart}
+            disabled={!selectedEvent || startSession.isPending}
+          >
+            {startSession.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Setting up roleplay...</>
+            ) : (
+              <><MessageSquare className="h-4 w-4 mr-2" /> Start Roleplay Session</>
+            )}
+          </Button>
         </div>
+      )}
+
+      {step === "loading" && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-sm text-muted-foreground">Generating your scenario and performance indicators...</p>
+          </CardContent>
+        </Card>
       )}
     </div>
+  );
+}
+
+function EventCard({ event, selected, onSelect }: { event: any; selected: boolean; onSelect: (code: string) => void }) {
+  return (
+    <Card
+      className={`cursor-pointer transition-all ${
+        selected ? "border-primary ring-2 ring-primary/20" : "hover:border-primary/50"
+      }`}
+      onClick={() => onSelect(event.code)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-1">
+          <Badge variant="outline" className="text-xs">{event.code}</Badge>
+          <Badge variant="secondary" className="text-xs">
+            {event.teamMin === 1 ? "Individual" : "Team"}
+          </Badge>
+        </div>
+        <p className="font-medium text-sm">{event.name}</p>
+      </CardContent>
+    </Card>
   );
 }

@@ -71,8 +71,11 @@ export default function PlannerPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["planner"] });
       if (data?.count) {
-        setGeneratedMessage(`AI generated ${data.count} tasks for your schedule!`);
-        setTimeout(() => setGeneratedMessage(""), 5000);
+        const compInfo = data.competitionName
+          ? ` (${data.daysUntil} days until ${data.competitionName})`
+          : "";
+        setGeneratedMessage(`AI generated ${data.count} tasks for your schedule!${compInfo}`);
+        setTimeout(() => setGeneratedMessage(""), 8000);
       }
     },
   });
