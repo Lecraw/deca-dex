@@ -103,11 +103,31 @@ export default function PresentationPage() {
       // 1. Upload file directly to Supabase Storage (no size limit from Netlify)
       const fileUrl = await uploadDeckFile(projectId, file);
 
-      // 2. Save the URL to our database via API
+      // 2. Extract text client-side for AI features (PDF only)
+      let extractedText: string | null = null;
+      if (ext === "pdf") {
+        try {
+          const pdfjs = await import("pdfjs-dist");
+          const arrayBuffer = await file.arrayBuffer();
+          const doc = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+          const pageTexts: string[] = [];
+          for (let i = 1; i <= doc.numPages; i++) {
+            const page = await doc.getPage(i);
+            const textContent = await page.getTextContent();
+            const text = textContent.items.map((item: any) => item.str).join(" ");
+            pageTexts.push(text);
+          }
+          extractedText = pageTexts.join("\n\n--- Page Break ---\n\n");
+        } catch (pdfErr) {
+          console.warn("Client-side PDF text extraction failed:", pdfErr);
+        }
+      }
+
+      // 3. Save the URL + extracted text to our database via API
       const res = await fetch(`/api/projects/${projectId}/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name, fileUrl }),
+        body: JSON.stringify({ fileName: file.name, fileUrl, extractedText }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

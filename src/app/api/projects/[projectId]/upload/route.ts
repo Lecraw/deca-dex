@@ -29,7 +29,7 @@ export async function POST(
     // File was already uploaded to Supabase Storage by the client.
     // We just receive the metadata here.
     const body = await req.json();
-    const { fileName, fileUrl } = body;
+    const { fileName, fileUrl, extractedText } = body;
 
     if (!fileName || !fileUrl) {
       return NextResponse.json(
@@ -46,29 +46,33 @@ export async function POST(
       );
     }
 
-    // Save file URL and name to project
+    // Save file URL, name, and extracted text to project
     await prisma.project.update({
       where: { id: projectId },
       data: {
         uploadedFileName: fileName,
         uploadedFileData: fileUrl, // Now a URL instead of base64
-        uploadedFileText: null, // Text extraction not done server-side for URLs
+        uploadedFileText: extractedText || null, // Client-side extracted text for AI
       },
     });
 
-    // Create a placeholder slide record for PDFs
-    // PPTX text extraction would require downloading the file, so we skip it
+    // Create slide records — one per page if we have extracted text
     const parsedSlides: { title: string; content: string }[] = [];
 
-    if (ext === "pdf") {
-      parsedSlides.push({
-        title: fileName,
-        content: "PDF uploaded — view in presentation tab",
+    if (extractedText) {
+      // Split by page breaks (from client-side extraction)
+      const pages = extractedText.split("\n\n--- Page Break ---\n\n");
+      pages.forEach((pageText: string, i: number) => {
+        parsedSlides.push({
+          title: `Slide ${i + 1}`,
+          content: pageText.trim() || `(No text on slide ${i + 1})`,
+        });
       });
-    } else if (ext === "pptx") {
+    } else {
+      // Fallback placeholder
       parsedSlides.push({
         title: fileName,
-        content: "PPTX uploaded — view in presentation tab",
+        content: `${ext?.toUpperCase()} uploaded — view in presentation tab`,
       });
     }
 
