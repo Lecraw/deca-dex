@@ -495,64 +495,47 @@ export default function RoleplaySessionPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="min-h-[150px] max-h-[300px] overflow-y-auto bg-muted/30 rounded-lg p-3 text-sm leading-relaxed">
-                {!transcript && !interimTranscript && (
-                  <p className="text-muted-foreground italic">
-                    {isListening
-                      ? "Listening... Start speaking and your words will appear here"
-                      : "Press the microphone button below to start speaking. Your speech will be transcribed here in real time."}
-                  </p>
-                )}
-                {transcript}
-                {interimTranscript && (
-                  <span className="text-muted-foreground">{interimTranscript}</span>
-                )}
-              </div>
+              <textarea
+                className="w-full min-h-[150px] max-h-[300px] bg-muted/30 rounded-lg p-3 text-sm leading-relaxed resize-y border-0 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                placeholder={isListening
+                  ? "Listening... Start speaking and your words will appear here. You can also type or edit directly."
+                  : "Press the mic button to speak, or just type your response here."}
+                value={transcript + (interimTranscript ? interimTranscript : "")}
+                onChange={(e) => {
+                  setTranscript(e.target.value);
+                  setInterimTranscript("");
+                }}
+              />
             </CardContent>
           </Card>
 
           {/* Controls */}
           <div className="flex items-center gap-3">
-            {!speechSupported ? (
-              <Card className="flex-1 border-yellow-200 bg-yellow-50/50 dark:border-yellow-900 dark:bg-yellow-950/20">
-                <CardContent className="p-3">
-                  <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                    <AlertCircle className="h-3.5 w-3.5 inline mr-1" />
-                    Speech recognition is not supported in this browser. Please use Chrome for the best experience, or type your response below.
-                  </p>
-                  <textarea
-                    className="mt-2 w-full bg-background border rounded-md p-2 text-sm min-h-[80px]"
-                    placeholder="Type your response..."
-                    value={transcript}
-                    onChange={(e) => setTranscript(e.target.value)}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <Button
-                  size="lg"
-                  variant={isListening ? "destructive" : "default"}
-                  className="rounded-full h-14 w-14 shrink-0"
-                  onClick={isListening ? stopListening : startListening}
-                >
-                  {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                </Button>
-                <div className="flex-1 text-sm text-muted-foreground">
-                  {isListening ? (
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                      </span>
-                      Recording... Speak clearly into your microphone
-                    </div>
-                  ) : (
-                    "Tap the mic to start speaking"
-                  )}
-                </div>
-              </>
+            {speechSupported && (
+              <Button
+                size="lg"
+                variant={isListening ? "destructive" : "default"}
+                className="rounded-full h-14 w-14 shrink-0"
+                onClick={isListening ? stopListening : startListening}
+              >
+                {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+              </Button>
             )}
+            <div className="flex-1 text-sm text-muted-foreground">
+              {!speechSupported ? (
+                "Type your response in the box above"
+              ) : isListening ? (
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                  Recording... You can also type or edit in the box above
+                </div>
+              ) : (
+                "Tap the mic to speak, or type in the box above"
+              )}
+            </div>
           </div>
 
           <div className="flex gap-3">
