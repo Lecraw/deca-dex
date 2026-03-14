@@ -201,8 +201,8 @@ export default function RoleplaySessionPage() {
 
   // End session and get final score
   const endSession = useMutation({
-    mutationFn: async () => {
-      const allMessages = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+    mutationFn: async (overrideTranscript?: string) => {
+      const allMessages = overrideTranscript || messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
       const res = await fetch("/api/ai/roleplay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -281,8 +281,28 @@ export default function RoleplaySessionPage() {
   };
 
   const handleFinishRoleplay = () => {
-    stopListening();
-    endSession.mutate();
+    // Include any unsent transcript in messages before ending
+    const pendingText = transcript.trim();
+    if (pendingText) {
+      const userMsg: Message = {
+        role: "user",
+        content: pendingText,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => {
+        const updated = [...prev, userMsg];
+        // Use updated messages for the API call
+        const allMessages = updated.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+        stopListening();
+        setTranscript("");
+        setInterimTranscript("");
+        endSession.mutate(allMessages);
+        return updated;
+      });
+    } else {
+      stopListening();
+      endSession.mutate(undefined);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -420,55 +440,74 @@ export default function RoleplaySessionPage() {
             </CardContent>
           </Card>
 
-          {/* Chat / Transcript Area */}
-          <Card className="min-h-[300px]">
-            <CardContent className="p-4">
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-4">
-                  {phase === "presenting" && messages.length === 0 && (
-                    <div className="text-center py-8">
-                      <Mic className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        {isListening
-                          ? "Listening... Speak your presentation now"
-                          : "Press the microphone button to start speaking"}
-                      </p>
-                    </div>
-                  )}
-
-                  {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[85%] rounded-lg p-3 ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}>
-                        {msg.role === "judge" && (
-                          <p className="text-[10px] font-medium mb-1 opacity-70">Judge</p>
-                        )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Live transcript */}
-                  {(transcript || interimTranscript) && (
-                    <div className="flex justify-end">
-                      <div className="max-w-[85%] rounded-lg p-3 bg-primary/80 text-primary-foreground">
-                        <p className="text-[10px] font-medium mb-1 opacity-70">Speaking...</p>
-                        <p className="text-sm">
-                          {transcript}
-                          {interimTranscript && (
-                            <span className="opacity-60">{interimTranscript}</span>
+          {/* Conversation Area — past messages */}
+          {messages.length > 0 && (
+            <Card>
+              <CardContent className="p-4">
+                <ScrollArea className="max-h-[200px]">
+                  <div className="space-y-3">
+                    {messages.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] rounded-lg p-3 ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        }`}>
+                          {msg.role === "judge" && (
+                            <p className="text-[10px] font-medium mb-1 opacity-70">Judge</p>
                           )}
-                        </p>
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                    <div ref={scrollRef} />
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
 
-                  <div ref={scrollRef} />
-                </div>
-              </ScrollArea>
+          {/* Live Transcript Box */}
+          <Card className={`border-2 ${isListening ? "border-red-400 dark:border-red-600" : "border-border"}`}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  {isListening ? (
+                    <>
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                      </span>
+                      Live Transcript
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4 text-muted-foreground" />
+                      Transcript
+                    </>
+                  )}
+                </CardTitle>
+                {transcript && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {transcript.trim().split(/\s+/).filter(Boolean).length} words
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="min-h-[150px] max-h-[300px] overflow-y-auto bg-muted/30 rounded-lg p-3 text-sm leading-relaxed">
+                {!transcript && !interimTranscript && (
+                  <p className="text-muted-foreground italic">
+                    {isListening
+                      ? "Listening... Start speaking and your words will appear here"
+                      : "Press the microphone button below to start speaking. Your speech will be transcribed here in real time."}
+                  </p>
+                )}
+                {transcript}
+                {interimTranscript && (
+                  <span className="text-muted-foreground">{interimTranscript}</span>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -517,21 +556,22 @@ export default function RoleplaySessionPage() {
           </div>
 
           <div className="flex gap-3">
-            {transcript.trim() && (
+            {transcript.trim() && phase === "followup" && (
               <Button className="flex-1" onClick={handleSubmitSpeech}>
                 <Send className="h-4 w-4 mr-2" />
-                {phase === "presenting" ? "Submit Presentation" : "Submit Answer"}
+                Submit Answer
               </Button>
             )}
             <Button
-              variant="outline"
+              variant={transcript.trim() || messages.length > 0 ? "default" : "outline"}
+              className="flex-1"
               onClick={handleFinishRoleplay}
-              disabled={endSession.isPending || messages.length === 0}
+              disabled={endSession.isPending || (!transcript.trim() && messages.length === 0)}
             >
               {endSession.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scoring...</>
               ) : (
-                "End & Get Score"
+                <><CheckCircle2 className="h-4 w-4 mr-2" /> End &amp; Get Score</>
               )}
             </Button>
           </div>
