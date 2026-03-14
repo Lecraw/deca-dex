@@ -39,8 +39,11 @@ export async function GET(
   }
 
   // Parse JSON string fields for client consumption
+  // Exclude uploadedFileData (large base64) from default response
+  const { uploadedFileData: _fileData, ...projectWithoutFile } = project;
   return NextResponse.json({
-    ...project,
+    ...projectWithoutFile,
+    hasUploadedFile: !!_fileData,
     ideaJson: safeJsonParse(project.ideaJson),
     complianceJson: safeJsonParse(project.complianceJson),
     slides: project.slides.map((s) => ({

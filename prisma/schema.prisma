@@ -125,6 +125,7 @@ model Project {
   readinessScore   Int?
   uploadedFileName String?
   uploadedFileText String?
+  uploadedFileData String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

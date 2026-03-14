@@ -83,12 +83,19 @@ export async function POST(
     );
   }
 
-  // Save extracted text to project
+  // Store PDF as base64 for client-side rendering
+  // For PDFs, store directly. For PPTX, we store the raw file as base64 too.
+  const fileBase64 = buffer.toString("base64");
+  const mimeType = ext === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  const dataUrl = `data:${mimeType};base64,${fileBase64}`;
+
+  // Save extracted text and file data to project
   await prisma.project.update({
     where: { id: projectId },
     data: {
       uploadedFileName: fileName,
       uploadedFileText: extractedText.trim() || null,
+      uploadedFileData: ext === "pdf" ? dataUrl : null,
     },
   });
 
@@ -160,6 +167,7 @@ export async function DELETE(
     data: {
       uploadedFileName: null,
       uploadedFileText: null,
+      uploadedFileData: null,
     },
   });
 

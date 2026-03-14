@@ -132,7 +132,15 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        <Link href={`/projects/${projectId}/presentation`}>
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+              <Upload className="h-6 w-6 text-indigo-500" />
+              <span className="text-xs font-medium">My Presentation</span>
+            </CardContent>
+          </Card>
+        </Link>
         <Link href={`/projects/${projectId}/${isPitchDeck ? "slides" : "report"}`}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="p-4 flex flex-col items-center text-center gap-2">
