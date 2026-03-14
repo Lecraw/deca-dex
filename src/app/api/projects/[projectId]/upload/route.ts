@@ -2,49 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import path from "path";
-import fs from "fs/promises";
-import { execSync } from "child_process";
-
-const UPLOADS_DIR = path.join(process.cwd(), "uploads");
-
-async function ensureUploadsDir() {
-  await fs.mkdir(UPLOADS_DIR, { recursive: true });
-}
-
-/** Try to convert PPTX to PDF using LibreOffice. Returns true on success. */
-function convertPptxToPdf(pptxPath: string, outputDir: string): boolean {
-  try {
-    // Try soffice first (macOS Homebrew), then libreoffice
-    const cmds = ["soffice", "libreoffice"];
-    for (const cmd of cmds) {
-      try {
-        execSync(
-          `${cmd} --headless --convert-to pdf --outdir "${outputDir}" "${pptxPath}"`,
-          { timeout: 30000, stdio: "pipe" }
-        );
-        return true;
-      } catch {
-        continue;
-      }
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-/** Count pages in a PDF using pdf-parse */
-async function countPdfPages(buffer: Buffer): Promise<number> {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse");
-    const data = await pdfParse(buffer);
-    return data.numpages || 1;
-  } catch {
-    return 1;
-  }
-}
 
 export async function POST(
   req: NextRequest,
@@ -84,10 +41,7 @@ export async function POST(
 
   const buffer = Buffer.from(await file.arrayBuffer());
   let extractedText = "";
-  let pdfBuffer: Buffer | null = null;
   let slideCount = 0;
-
-  await ensureUploadsDir();
 
   try {
     if (ext === "pdf") {
@@ -95,10 +49,8 @@ export async function POST(
       const pdfParse = require("pdf-parse");
       const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
-      pdfBuffer = buffer;
       slideCount = pdfData.numpages || 1;
     } else if (ext === "pptx") {
-      // Extract text from PPTX by parsing XML
       const JSZip = (await import("jszip")).default;
       const zip = await JSZip.loadAsync(buffer);
       const slideFiles = Object.keys(zip.files)
@@ -123,43 +75,12 @@ export async function POST(
           extractedText += `\n--- Slide ${slideNum} ---\n${slideTexts.join("\n")}\n`;
         }
       }
-
-      // Save PPTX to disk and try converting to PDF
-      const pptxPath = path.join(UPLOADS_DIR, `${projectId}.pptx`);
-      await fs.writeFile(pptxPath, buffer);
-
-      const converted = convertPptxToPdf(pptxPath, UPLOADS_DIR);
-      if (converted) {
-        // LibreOffice outputs {projectId}.pdf in the same directory
-        const convertedPdfPath = path.join(UPLOADS_DIR, `${projectId}.pdf`);
-        try {
-          pdfBuffer = await fs.readFile(convertedPdfPath);
-          // Get actual page count from the PDF
-          slideCount = await countPdfPages(pdfBuffer);
-        } catch {
-          pdfBuffer = null;
-        }
-      }
-
-      // Clean up PPTX file (we only need the PDF)
-      try {
-        await fs.unlink(pptxPath);
-      } catch {
-        // ignore
-      }
     }
   } catch (err: any) {
     return NextResponse.json(
       { error: `Failed to parse file: ${err.message}` },
       { status: 400 }
     );
-  }
-
-  // Save PDF to disk for serving
-  const hasPdf = !!pdfBuffer;
-  if (pdfBuffer) {
-    const pdfPath = path.join(UPLOADS_DIR, `${projectId}.pdf`);
-    await fs.writeFile(pdfPath, pdfBuffer);
   }
 
   // Save extracted text to project
@@ -178,7 +99,6 @@ export async function POST(
     const slideBlocks = extractedText
       .split(/\n--- Slide \d+ ---\n/)
       .filter(Boolean);
-    // Use max of slideCount (from XML) and text blocks
     const count = Math.max(slideCount, slideBlocks.length);
     for (let i = 0; i < count; i++) {
       const block = slideBlocks[i] || "";
@@ -189,7 +109,6 @@ export async function POST(
       });
     }
   } else if (ext === "pdf") {
-    // One slide per PDF page
     const textByPage = extractedText.includes("\f")
       ? extractedText.split("\f")
       : [extractedText];
@@ -222,7 +141,6 @@ export async function POST(
     fileName,
     textLength: (extractedText.trim() || "").length,
     slidesCreated: parsedSlides.length,
-    hasPdf,
   });
 }
 
@@ -245,12 +163,7 @@ export async function DELETE(
     },
   });
 
-  // Delete PDF file from disk
-  try {
-    await fs.unlink(path.join(UPLOADS_DIR, `${projectId}.pdf`));
-  } catch {
-    // ignore
-  }
+  await prisma.slide.deleteMany({ where: { projectId } });
 
   return NextResponse.json({ success: true });
 }
