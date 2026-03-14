@@ -5,7 +5,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const BUCKET = "pitch-decks";
+const BUCKET = "pitch-deck";
 
 /**
  * Upload a file directly to Supabase Storage.
