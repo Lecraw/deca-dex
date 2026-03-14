@@ -83,8 +83,14 @@ export default function PresentationPage() {
         body: formData,
       });
       if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || "Upload failed");
+        let msg = "Upload failed";
+        try {
+          const err = await res.json();
+          msg = err.error || msg;
+        } catch {
+          msg = `Upload failed (${res.status})`;
+        }
+        alert(msg);
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });

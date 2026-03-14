@@ -10,6 +10,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
+  try {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -64,11 +65,17 @@ export async function POST(
 
   try {
     if (ext === "pdf") {
-      const { extractText } = await import("unpdf");
-      const uint8 = new Uint8Array(buffer);
-      const { text: pageTexts, totalPages } = await extractText(uint8, { mergePages: false });
-      slideCount = totalPages;
-      extractedText = pageTexts.join("\f");
+      try {
+        const { extractText } = await import("unpdf");
+        const uint8 = new Uint8Array(buffer);
+        const { text: pageTexts, totalPages } = await extractText(uint8, { mergePages: false });
+        slideCount = totalPages;
+        extractedText = pageTexts.join("\f");
+      } catch (pdfErr: any) {
+        // unpdf may fail in some serverless environments — still accept the file
+        console.warn("PDF text extraction failed:", pdfErr.message);
+        slideCount = 1;
+      }
     } else if (ext === "pptx") {
       const JSZip = (await import("jszip")).default;
       const zip = await JSZip.loadAsync(buffer);
@@ -188,6 +195,13 @@ export async function POST(
     textLength: (extractedText.trim() || "").length,
     slidesCreated: parsedSlides.length,
   });
+  } catch (err: any) {
+    console.error("Upload handler error:", err);
+    return NextResponse.json(
+      { error: err.message || "Internal server error during upload" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(
