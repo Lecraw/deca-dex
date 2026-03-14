@@ -9,16 +9,19 @@ import { Badge } from "@/components/ui/badge";
 import {
   Calendar,
   Plus,
-  Check,
   Sparkles,
   Loader2,
   Circle,
   CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ListTodo,
 } from "lucide-react";
 
 export default function PlannerPage() {
   const queryClient = useQueryClient();
   const [newTask, setNewTask] = useState("");
+  const [generatedMessage, setGeneratedMessage] = useState("");
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["planner"],
@@ -65,22 +68,33 @@ export default function PlannerPage() {
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["planner"] });
+      if (data?.count) {
+        setGeneratedMessage(`AI generated ${data.count} tasks for your schedule!`);
+        setTimeout(() => setGeneratedMessage(""), 5000);
+      }
     },
   });
 
-  const completedCount = tasks.filter((t: any) => t.completed).length;
+  const incompleteTasks = tasks.filter((t: any) => !t.completed);
+  const completedTasks = tasks.filter((t: any) => t.completed);
+  const completedCount = completedTasks.length;
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
 
   const today = new Date().toISOString().split("T")[0];
-  const todayTasks = tasks.filter(
+
+  // Categorize incomplete tasks
+  const overdueTasks = incompleteTasks.filter(
+    (t: any) => t.dueDate && t.dueDate.split("T")[0] < today
+  );
+  const todayTasks = incompleteTasks.filter(
     (t: any) => t.dueDate && t.dueDate.split("T")[0] === today
   );
-  const upcomingTasks = tasks.filter(
-    (t: any) => !t.completed && (!t.dueDate || t.dueDate.split("T")[0] > today)
+  const upcomingTasks = incompleteTasks.filter(
+    (t: any) => t.dueDate && t.dueDate.split("T")[0] > today
   );
-  const completedTasks = tasks.filter((t: any) => t.completed);
+  const noDueDateTasks = incompleteTasks.filter((t: any) => !t.dueDate);
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -105,21 +119,35 @@ export default function PlannerPage() {
         </Button>
       </div>
 
+      {/* AI Generated Message */}
+      {generatedMessage && (
+        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="p-4 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-green-600" />
+            <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+              {generatedMessage}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Progress */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span>{completedCount} of {tasks.length} tasks complete</span>
-            <span className="font-bold">{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary rounded-full h-2 transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {tasks.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>{completedCount} of {tasks.length} tasks complete</span>
+              <span className="font-bold">{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary rounded-full h-2 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add Task */}
       <div className="flex gap-2">
@@ -134,15 +162,31 @@ export default function PlannerPage() {
         </Button>
       </div>
 
+      {/* Overdue Tasks */}
+      {overdueTasks.length > 0 && (
+        <Card className="border-red-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-4 w-4" /> Overdue ({overdueTasks.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {overdueTasks.map((task: any) => (
+              <TaskItem key={task.id} task={task} onToggle={toggleTask.mutate} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Today's Tasks */}
       {todayTasks.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-4 w-4" /> Today
+              <Calendar className="h-4 w-4" /> Today ({todayTasks.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1">
             {todayTasks.map((task: any) => (
               <TaskItem key={task.id} task={task} onToggle={toggleTask.mutate} />
             ))}
@@ -153,11 +197,29 @@ export default function PlannerPage() {
       {/* Upcoming */}
       {upcomingTasks.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Upcoming</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" /> Upcoming ({upcomingTasks.length})
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1">
             {upcomingTasks.map((task: any) => (
+              <TaskItem key={task.id} task={task} onToggle={toggleTask.mutate} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No Due Date */}
+      {noDueDateTasks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ListTodo className="h-4 w-4" /> No Due Date ({noDueDateTasks.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {noDueDateTasks.map((task: any) => (
               <TaskItem key={task.id} task={task} onToggle={toggleTask.mutate} />
             ))}
           </CardContent>
@@ -167,15 +229,20 @@ export default function PlannerPage() {
       {/* Completed */}
       {completedTasks.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base text-muted-foreground">
-              Completed ({completedTasks.length})
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-muted-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" /> Completed ({completedTasks.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1">
             {completedTasks.slice(0, 10).map((task: any) => (
               <TaskItem key={task.id} task={task} onToggle={toggleTask.mutate} />
             ))}
+            {completedTasks.length > 10 && (
+              <p className="text-xs text-muted-foreground text-center pt-2">
+                + {completedTasks.length - 10} more completed
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -186,8 +253,19 @@ export default function PlannerPage() {
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-semibold mb-1">No tasks yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Add tasks manually or let AI generate a schedule for you
+              Add tasks manually or let AI generate a study schedule based on your projects
             </p>
+            <Button
+              onClick={() => generateSchedule.mutate()}
+              disabled={generateSchedule.isPending}
+            >
+              {generateSchedule.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2" />
+              )}
+              Generate AI Schedule
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -227,14 +305,24 @@ function TaskItem({
           <p className="text-xs text-muted-foreground truncate">{task.description}</p>
         )}
       </div>
-      {task.dueDate && (
-        <span className="text-xs text-muted-foreground shrink-0">
-          {new Date(task.dueDate).toLocaleDateString()}
-        </span>
-      )}
-      {task.aiGenerated && (
-        <Badge variant="secondary" className="text-xs shrink-0">AI</Badge>
-      )}
+      <div className="flex items-center gap-2 shrink-0">
+        {task.dueDate && (
+          <span className="text-xs text-muted-foreground">
+            {new Date(task.dueDate).toLocaleDateString()}
+          </span>
+        )}
+        {task.priority && task.priority !== "MEDIUM" && (
+          <Badge
+            variant="outline"
+            className={`text-[10px] ${priorityColors[task.priority] || ""}`}
+          >
+            {task.priority}
+          </Badge>
+        )}
+        {task.aiGenerated && (
+          <Badge variant="secondary" className="text-[10px]">AI</Badge>
+        )}
+      </div>
     </div>
   );
 }
