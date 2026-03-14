@@ -103,7 +103,7 @@ interface DecaEventResponse {
 export default function EventsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set(Object.keys(clusterConfig)));
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
 
   const { data: events = [], isLoading } = useQuery<DecaEventResponse[]>({
     queryKey: ["events"],
