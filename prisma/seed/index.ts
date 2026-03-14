@@ -1,12 +1,13 @@
 import "dotenv/config";
-import path from "path";
 import { PrismaClient } from "../../src/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { decaEvents } from "./events";
 import { badges } from "./badges";
 
-const dbPath = path.resolve(__dirname, "../dev.db");
-const adapter = new PrismaLibSql({ url: `file:${dbPath}` });
+const adapter = new PrismaLibSql({
+  url: process.env.DATABASE_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
