@@ -122,7 +122,16 @@ Return your analysis as JSON with this exact structure:
   "summary": "2-3 sentence overall assessment"
 }
 
-Include 8-15 checks covering structural requirements, content quality, and rubric alignment. Be specific and actionable. Score honestly — a project with placeholder or minimal content should score low.`;
+Include 8-15 checks covering structural requirements, content quality, and rubric alignment. Be specific and actionable.
+
+SCORING GUIDE — the score MUST be consistent with the check results:
+- If ALL checks pass: score should be 92-100
+- If most checks pass with only minor suggestions: score should be 85-92
+- If a few checks have warnings but no errors: score should be 70-85
+- If multiple checks fail with errors: score should be 45-70
+- If major structural issues or missing sections: score should be below 45
+
+IMPORTANT: Do NOT penalize heavily for minor style or wording suggestions. The score must directly reflect the check results — if checks are mostly green, the score must be high.`;
 
   let message;
   try {

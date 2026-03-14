@@ -82,7 +82,7 @@ export default function CompliancePage() {
           </Card>
 
           <div className="space-y-2">
-            {compliance.checks?.map((check: any, i: number) => (
+            {[...(compliance.checks || [])].sort((a: any, b: any) => Number(a.passed) - Number(b.passed)).map((check: any, i: number) => (
               <Card key={i} className={check.passed ? "" : "border-yellow-200"}>
                 <CardContent className="p-4 flex items-start gap-3">
                   {check.passed ? (

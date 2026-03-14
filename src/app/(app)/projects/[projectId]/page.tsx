@@ -401,7 +401,7 @@ export default function ProjectDetailPage() {
                 </div>
                 <Progress value={compliance.score} />
                 <div className="space-y-1.5">
-                  {(compliance.checks || []).slice(0, 5).map((check: any, i: number) => (
+                  {[...(compliance.checks || [])].sort((a: any, b: any) => Number(a.passed) - Number(b.passed)).slice(0, 5).map((check: any, i: number) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
                       {check.passed ? (
                         <CheckCircle className="h-3 w-3 text-green-500 shrink-0" />
