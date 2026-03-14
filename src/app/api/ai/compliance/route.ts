@@ -65,8 +65,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (project.uploadedFileText) {
-    projectContent += `\n=== UPLOADED PRESENTATION (${project.uploadedFileName}) ===\n`;
-    projectContent += project.uploadedFileText;
+    const uploadedPages = project.uploadedFileText.split("\n\n--- Page Break ---\n\n");
+    projectContent += `\n=== UPLOADED FILE (${project.uploadedFileName}) — ${uploadedPages.length} total pages ===\n`;
+    projectContent += `NOTE: This PDF may include supplemental pages (e.g. Statement of Assurances, Academic Integrity forms, title pages) that do NOT count toward the slide/page limit. Only count actual presentation/content slides when checking slide count compliance.\n\n`;
+    uploadedPages.forEach((page, i) => {
+      projectContent += `--- Page ${i + 1} of ${uploadedPages.length} ---\n${page}\n\n`;
+    });
   }
 
   // Build guidelines string
@@ -101,7 +105,7 @@ Analyze the student's project and check for:
 2. Whether the content aligns with DECA event requirements and rubric expectations
 3. Content quality issues (too vague, missing data/evidence, off-topic)
 4. Structural issues (missing bibliography, poor organization)
-5. Slide/page count compliance
+5. Slide/page count compliance (IMPORTANT: do NOT count supplemental pages like Statement of Assurances, Academic Integrity forms, cover pages, or appendix pages toward the slide limit — only count actual content/presentation slides)
 6. Whether the project would score well against the rubric categories
 
 Return your analysis as JSON with this exact structure:

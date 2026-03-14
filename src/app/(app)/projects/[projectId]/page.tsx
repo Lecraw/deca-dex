@@ -22,8 +22,11 @@ import {
   AlertTriangle,
   Upload,
   X,
+  Pencil,
+  Check,
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -74,6 +77,25 @@ export default function ProjectDetailPage() {
     },
   });
 
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+
+  const renameProject = useMutation({
+    mutationFn: async (newTitle: string) => {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (!res.ok) throw new Error("Failed to rename");
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsEditingTitle(false);
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+
   const removeFile = useMutation({
     mutationFn: async () => {
       await fetch(`/api/projects/${projectId}/upload`, { method: "DELETE" });
@@ -113,7 +135,52 @@ export default function ProjectDetailPage() {
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{project.title}</h1>
+              {isEditingTitle ? (
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (editTitle.trim()) renameProject.mutate(editTitle.trim());
+                  }}
+                >
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="text-2xl font-bold h-9 w-64"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setIsEditingTitle(false);
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    variant="ghost"
+                    disabled={renameProject.isPending}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setIsEditingTitle(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </form>
+              ) : (
+                <h1
+                  className="text-2xl font-bold cursor-pointer hover:text-primary/80 transition-colors group flex items-center gap-2"
+                  onClick={() => {
+                    setEditTitle(project.title);
+                    setIsEditingTitle(true);
+                  }}
+                >
+                  {project.title}
+                  <Pencil className="h-3.5 w-3.5 opacity-0 group-hover:opacity-50 transition-opacity" />
+                </h1>
+              )}
               <Badge variant="outline">{project.event.code}</Badge>
             </div>
             <p className="text-muted-foreground text-sm">{project.event.name}</p>

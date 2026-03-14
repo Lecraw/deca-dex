@@ -63,8 +63,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (project.uploadedFileText) {
-    projectContent += `\n=== UPLOADED PRESENTATION (${project.uploadedFileName}) ===\n`;
-    projectContent += project.uploadedFileText;
+    const uploadedPages = project.uploadedFileText.split("\n\n--- Page Break ---\n\n");
+    projectContent += `\n=== UPLOADED FILE (${project.uploadedFileName}) — ${uploadedPages.length} total pages ===\n`;
+    projectContent += `NOTE: This PDF may include supplemental pages (e.g. Statement of Assurances, Academic Integrity forms) that are NOT presentation content slides.\n\n`;
+    uploadedPages.forEach((page: string, i: number) => {
+      projectContent += `--- Page ${i + 1} of ${uploadedPages.length} ---\n${page}\n\n`;
+    });
   }
 
   const event = project.event;
