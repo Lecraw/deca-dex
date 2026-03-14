@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { anthropic } from "@/lib/anthropic";
+import { prisma } from "@/lib/prisma";
+import { judgeSystem } from "@/lib/ai/prompts";
+import { awardXp } from "@/lib/gamification/xp";
+import { checkAndAwardBadges } from "@/lib/gamification/badges";
+import type { DecaEventData } from "@/types/deca";
+
+export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const { projectId } = body;
+
+  if (!projectId) {
+    return NextResponse.json({ error: "projectId required" }, { status: 400 });
+  }
+
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userId: session.user.id },
+    include: {
+      event: true,
+      slides: { orderBy: { order: "asc" } },
+      sections: { orderBy: { order: "asc" } },
+    },
+  });
+
+  if (!project) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  // Build project content for review
+  let projectContent = `Project: ${project.title}\n`;
+  if (project.businessIdea) {
+    projectContent += `Business Idea: ${project.businessIdea}\n\n`;
+  }
+
+  if (project.slides.length > 0) {
+    projectContent += "=== SLIDES ===\n";
+    for (const slide of project.slides) {
+      projectContent += `\nSlide ${slide.order + 1}: ${slide.title}\n`;
+      const content = typeof slide.contentJson === "string" ? JSON.parse(slide.contentJson) : slide.contentJson;
+      if (content?.blocks) {
+        for (const block of content.blocks) {
+          if (block.content) projectContent += `${block.content}\n`;
+        }
+      }
+    }
+  }
+
+  if (project.sections.length > 0) {
+    projectContent += "=== REPORT SECTIONS ===\n";
+    for (const section of project.sections) {
+      projectContent += `\nSection: ${section.title}\n`;
+      const plainText = section.bodyHtml.replace(/<[^>]*>/g, "");
+      projectContent += `${plainText}\n`;
+    }
+  }
+
+  if (project.uploadedFileText) {
+    projectContent += `\n=== UPLOADED PRESENTATION (${project.uploadedFileName}) ===\n`;
+    projectContent += project.uploadedFileText;
+  }
+
+  const event = project.event;
+  const eventData: DecaEventData = {
+    code: event.code,
+    name: event.name,
+    cluster: event.cluster,
+    category: event.category,
+    eventType: event.eventType as any,
+    hasExam: event.hasExam,
+    teamMin: event.teamMin,
+    teamMax: event.teamMax,
+    description: event.description,
+    rubric: JSON.parse(event.rubricJson),
+    guidelines: JSON.parse(event.guidelinesJson),
+    sections: JSON.parse(event.sectionsJson),
+  };
+
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2048,
+    system: judgeSystem(eventData),
+    messages: [
+      {
+        role: "user",
+        content: `Please score this project:\n\n${projectContent}`,
+      },
+    ],
+  });
+
+  const text =
+    message.content[0].type === "text" ? message.content[0].text : "";
+
+  let result;
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+  } catch {
+    result = null;
+  }
+
+  if (!result) {
+    return NextResponse.json({ error: "Failed to parse judge response" }, { status: 500 });
+  }
+
+  // Save score
+  const score = await prisma.judgeScore.create({
+    data: {
+      projectId,
+      totalScore: result.totalScore,
+      maxScore: result.maxScore,
+      categoriesJson: JSON.stringify(result.categories),
+      overallNotes: result.overallNotes || "",
+      strengths: JSON.stringify(result.strengths || []),
+      improvements: JSON.stringify(result.improvements || []),
+    },
+  });
+
+  // Award XP for running judge simulation
+  await awardXp(session.user.id, "RUN_JUDGE_SIM", { projectId, scoreId: score.id });
+  await checkAndAwardBadges(session.user.id);
+
+  return NextResponse.json({ score: result, scoreId: score.id });
+}

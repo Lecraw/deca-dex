@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================
+// AUTH (NextAuth Prisma Adapter)
+// ============================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// USER
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("STUDENT")
+  school        String?
+  state         String?
+  grade         Int?
+  xp            Int       @default(0)
+  level         Int       @default(1)
+  streakDays    Int       @default(0)
+  lastActiveAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  projects         Project[]
+  badges           UserBadge[]
+  xpLogs           XpLog[]
+  plannerTasks     PlannerTask[]
+  roleplaySessions RoleplaySession[]
+  feedbackItems    AiFeedback[]
+}
+
+// ============================================
+// DECA EVENTS
+// ============================================
+
+model DecaEvent {
+  id              String  @id @default(cuid())
+  code            String  @unique
+  name            String
+  cluster         String
+  category        String
+  eventType       String
+  maxSlides       Int?
+  maxPages        Int?
+  presentationMin Int?
+  prepMin         Int?
+  hasExam         Boolean @default(false)
+  teamMin         Int     @default(1)
+  teamMax         Int     @default(1)
+  description     String
+  rubricJson      String
+  guidelinesJson  String
+  sectionsJson    String
+  yearCode        String  @default("2025-2026")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  projects Project[]
+}
+
+// ============================================
+// PROJECTS
+// ============================================
+
+model Project {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  status         String   @default("DRAFT")
+  userId         String
+  eventId        String
+  businessIdea   String?
+  ideaJson       String?
+  complianceJson   String?
+  readinessScore   Int?
+  uploadedFileName String?
+  uploadedFileText String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event    DecaEvent      @relation(fields: [eventId], references: [id])
+  slides   Slide[]
+  sections ReportSection[]
+  feedback AiFeedback[]
+  scores   JudgeScore[]
+
+  @@index([userId])
+  @@index([eventId])
+}
+
+// ============================================
+// PITCH DECK SLIDES
+// ============================================
+
+model Slide {
+  id          String  @id @default(cuid())
+  projectId   String
+  order       Int
+  title       String
+  contentJson String
+  notesText   String?
+  templateId  String?
+
+  project  Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedback AiFeedback[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@unique([projectId, order])
+}
+
+// ============================================
+// WRITTEN REPORT SECTIONS
+// ============================================
+
+model ReportSection {
+  id          String @id @default(cuid())
+  projectId   String
+  order       Int
+  title       String
+  bodyHtml    String
+  wordCount   Int    @default(0)
+  sectionType String
+
+  project  Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  feedback AiFeedback[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@unique([projectId, order])
+}
+
+// ============================================
+// AI FEEDBACK
+// ============================================
+
+model AiFeedback {
+  id           String  @id @default(cuid())
+  projectId    String
+  userId       String
+  slideId      String?
+  sectionId    String?
+  feedbackType String
+  content      String
+  severity     String  @default("INFO")
+  suggestion   String?
+  resolved     Boolean @default(false)
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id])
+  slide   Slide?         @relation(fields: [slideId], references: [id])
+  section ReportSection? @relation(fields: [sectionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ============================================
+// JUDGE SCORES
+// ============================================
+
+model JudgeScore {
+  id             String @id @default(cuid())
+  projectId      String
+  totalScore     Float
+  maxScore       Float
+  categoriesJson String
+  overallNotes   String
+  strengths      String
+  improvements   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ============================================
+// ROLEPLAY
+// ============================================
+
+model RoleplaySession {
+  id           String  @id @default(cuid())
+  userId       String
+  eventCode    String
+  scenarioJson String
+  messagesJson String
+  scoreJson    String?
+  completed    Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// DAILY PLANNER
+// ============================================
+
+model PlannerTask {
+  id          String    @id @default(cuid())
+  userId      String
+  projectId   String?
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    String    @default("MEDIUM")
+  completed   Boolean   @default(false)
+  aiGenerated Boolean   @default(false)
+  order       Int       @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, dueDate])
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model Badge {
+  id          String @id @default(cuid())
+  code        String @unique
+  name        String
+  description String
+  icon        String
+  xpReward    Int    @default(0)
+  condition   String
+
+  users UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+}
+
+model XpLog {
+  id       String   @id @default(cuid())
+  userId   String
+  amount   Int
+  reason   String
+  metadata String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
