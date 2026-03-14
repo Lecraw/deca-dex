@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { uploadDeckFile } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ export default function PresentationPage() {
   const projectId = params.projectId as string;
   const [activePageIndex, setActivePageIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [pdfNumPages, setPdfNumPages] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: project } = useQuery({
@@ -68,34 +70,33 @@ export default function PresentationPage() {
     [pdfDataUrl]
   );
 
-  // Count pages from the slides (each slide = one page)
-  const totalPages = project?.slides?.length || 0;
+  // For PDFs, use the actual page count from react-pdf; for PPTX use slides
+  const totalPages = isPdf ? pdfNumPages : (project?.slides?.length || 0);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !["pdf", "pptx"].includes(ext)) {
+      alert("Only PDF and PPTX files are supported");
+      return;
+    }
+
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // 1. Upload file directly to Supabase Storage (no size limit from Netlify)
+      const fileUrl = await uploadDeckFile(projectId, file);
+
+      // 2. Save the URL to our database via API
       const res = await fetch(`/api/projects/${projectId}/upload`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, fileUrl }),
       });
       if (!res.ok) {
-        let msg = "Upload failed";
-        try {
-          const text = await res.text();
-          try {
-            const err = JSON.parse(text);
-            msg = err.error || msg;
-          } catch {
-            msg = text.slice(0, 200) || `Upload failed (${res.status})`;
-          }
-        } catch {
-          msg = `Upload failed (${res.status})`;
-        }
-        alert(msg);
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to save file info");
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
@@ -345,6 +346,7 @@ export default function PresentationPage() {
                     file={memoizedPdfFile}
                     pageNumber={activePageIndex + 1}
                     width={800}
+                    onLoadSuccess={({ numPages }) => setPdfNumPages(numPages)}
                   />
                 </div>
               </div>

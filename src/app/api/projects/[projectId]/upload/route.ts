@@ -3,9 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Allow longer execution for large uploads
-export const maxDuration = 60;
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
@@ -23,28 +20,25 @@ export async function POST(
     });
 
     if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    }
-
-    // Netlify serverless functions have a ~6MB request body limit
-    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5 MB (leave room for form overhead)
-    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "File too large. Maximum size is 4.5 MB for serverless hosting." },
+        { error: "Project not found" },
+        { status: 404 }
+      );
+    }
+
+    // File was already uploaded to Supabase Storage by the client.
+    // We just receive the metadata here.
+    const body = await req.json();
+    const { fileName, fileUrl } = body;
+
+    if (!fileName || !fileUrl) {
+      return NextResponse.json(
+        { error: "fileName and fileUrl are required" },
         { status: 400 }
       );
     }
 
-    const fileName = file.name;
     const ext = fileName.split(".").pop()?.toLowerCase();
-
     if (!ext || !["pdf", "pptx"].includes(ext)) {
       return NextResponse.json(
         { error: "Only PDF and PPTX files are supported" },
@@ -52,118 +46,29 @@ export async function POST(
       );
     }
 
-    let buffer: Buffer;
-    try {
-      buffer = Buffer.from(await file.arrayBuffer());
-    } catch {
-      return NextResponse.json(
-        { error: "Failed to read file" },
-        { status: 400 }
-      );
-    }
+    // Save file URL and name to project
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        uploadedFileName: fileName,
+        uploadedFileData: fileUrl, // Now a URL instead of base64
+        uploadedFileText: null, // Text extraction not done server-side for URLs
+      },
+    });
 
-    let extractedText = "";
-    let slideCount = 0;
-
-    try {
-      if (ext === "pdf") {
-        // For PDFs, we skip server-side text extraction to keep the
-        // serverless function lightweight. The PDF is rendered client-side
-        // using react-pdf. We store just the file data.
-        slideCount = 1; // Default; client-side viewer handles page counting
-      } else if (ext === "pptx") {
-        const JSZip = (await import("jszip")).default;
-        const zip = await JSZip.loadAsync(buffer);
-        const slideFiles = Object.keys(zip.files)
-          .filter((name) => name.match(/ppt\/slides\/slide\d+\.xml$/))
-          .sort((a, b) => {
-            const numA = parseInt(a.match(/slide(\d+)/)?.[1] || "0");
-            const numB = parseInt(b.match(/slide(\d+)/)?.[1] || "0");
-            return numA - numB;
-          });
-
-        slideCount = slideFiles.length;
-
-        for (const slideFile of slideFiles) {
-          const slideXml = await zip.files[slideFile].async("string");
-          const textMatches =
-            slideXml.match(/<a:t[^>]*>([^<]*)<\/a:t>/g) || [];
-          const slideTexts = textMatches
-            .map((m) => m.replace(/<[^>]+>/g, ""))
-            .filter(Boolean);
-          const slideNum = slideFile.match(/slide(\d+)/)?.[1] || "?";
-          if (slideTexts.length > 0) {
-            extractedText += `\n--- Slide ${slideNum} ---\n${slideTexts.join("\n")}\n`;
-          }
-        }
-      }
-    } catch (err: any) {
-      return NextResponse.json(
-        { error: `Failed to parse file: ${err.message}` },
-        { status: 400 }
-      );
-    }
-
-    // Store file as base64 for client-side rendering
-    const fileBase64 = buffer.toString("base64");
-    const mimeType =
-      ext === "pdf"
-        ? "application/pdf"
-        : "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-    const dataUrl = `data:${mimeType};base64,${fileBase64}`;
-
-    // Save extracted text and file data to project
-    try {
-      await prisma.project.update({
-        where: { id: projectId },
-        data: {
-          uploadedFileName: fileName,
-          uploadedFileText: extractedText.trim() || null,
-          uploadedFileData: dataUrl,
-        },
-      });
-    } catch (dbErr: any) {
-      console.error("DB save error:", dbErr.message);
-      // If file data is too large for DB, save without it
-      try {
-        await prisma.project.update({
-          where: { id: projectId },
-          data: {
-            uploadedFileName: fileName,
-            uploadedFileText: extractedText.trim() || null,
-            uploadedFileData: null,
-          },
-        });
-      } catch (dbErr2: any) {
-        console.error("DB save error (retry):", dbErr2.message);
-        return NextResponse.json(
-          { error: `Failed to save file: ${dbErr2.message}` },
-          { status: 500 }
-        );
-      }
-    }
-
-    // Create slide records — one per page/slide
+    // Create a placeholder slide record for PDFs
+    // PPTX text extraction would require downloading the file, so we skip it
     const parsedSlides: { title: string; content: string }[] = [];
 
-    if (ext === "pptx") {
-      const slideBlocks = extractedText
-        .split(/\n--- Slide \d+ ---\n/)
-        .filter(Boolean);
-      const count = Math.max(slideCount, slideBlocks.length);
-      for (let i = 0; i < count; i++) {
-        const block = slideBlocks[i] || "";
-        const lines = block.trim().split("\n").filter(Boolean);
-        parsedSlides.push({
-          title: lines[0]?.slice(0, 80) || `Slide ${i + 1}`,
-          content: lines.join("\n"),
-        });
-      }
-    } else if (ext === "pdf") {
-      // For PDF, create a single slide entry as placeholder
+    if (ext === "pdf") {
       parsedSlides.push({
         title: fileName,
         content: "PDF uploaded — view in presentation tab",
+      });
+    } else if (ext === "pptx") {
+      parsedSlides.push({
+        title: fileName,
+        content: "PPTX uploaded — view in presentation tab",
       });
     }
 
@@ -183,7 +88,7 @@ export async function POST(
 
     return NextResponse.json({
       fileName,
-      textLength: (extractedText.trim() || "").length,
+      fileUrl,
       slidesCreated: parsedSlides.length,
     });
   } catch (err: any) {

@@ -37,16 +37,19 @@ export function PdfSlideMain({
   file,
   pageNumber,
   width,
+  onLoadSuccess,
 }: {
   file: { url: string } | null;
   pageNumber: number;
   width: number;
+  onLoadSuccess?: (data: { numPages: number }) => void;
 }) {
   if (!file) return null;
 
   return (
     <Document
       file={file}
+      onLoadSuccess={onLoadSuccess}
       loading={
         <div className="aspect-video flex items-center justify-center bg-muted">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
