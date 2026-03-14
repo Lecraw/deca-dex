@@ -12,8 +12,8 @@ import {
   Mic,
   User,
   ChevronLeft,
-  Sparkles,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -39,9 +39,7 @@ export function Sidebar() {
       )}
     >
       <div className="flex items-center gap-2 p-4 border-b">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="w-4 h-4" />
-        </div>
+        <Image src="/logo-white.png" alt="Deca-Dex" width={32} height={32} className="w-8 h-8" />
         {!collapsed && (
           <span className="font-bold text-lg tracking-tight">Deca-Dex</span>
         )}

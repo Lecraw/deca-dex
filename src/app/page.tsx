@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles,
   Lightbulb,
   Presentation,
   FileText,
@@ -10,6 +9,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
+import Image from "next/image";
 
 const features = [
   {
@@ -57,9 +57,7 @@ export default function LandingPage() {
       <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 border border-primary/30">
-              <Sparkles className="w-4 h-4 text-primary" />
-            </div>
+            <Image src="/logo-white.png" alt="Deca-Dex" width={32} height={32} className="w-8 h-8" />
             <span className="font-bold text-lg">Deca-Dex</span>
           </div>
           <div className="flex items-center gap-2">
@@ -79,7 +77,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.25_0.08_255)_0%,transparent_60%)] opacity-40" />
           <div className="container mx-auto px-4 text-center relative z-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary mb-6">
-              <Sparkles className="h-3.5 w-3.5" />
+              <Image src="/logo-white.png" alt="" width={14} height={14} className="w-3.5 h-3.5" />
               AI-Powered DECA Assistant
             </div>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl mx-auto">

@@ -11,8 +11,8 @@ import {
   FolderOpen,
   Mic,
   User,
-  Sparkles,
 } from "lucide-react";
+import Image from "next/image";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -30,9 +30,7 @@ export function MobileNav() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
-          <Sparkles className="w-4 h-4" />
-        </div>
+        <Image src="/logo-white.png" alt="Deca-Dex" width={32} height={32} className="w-8 h-8" />
         <span className="font-bold text-lg">Deca-Dex</span>
       </div>
 

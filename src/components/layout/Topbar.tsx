@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, LogOut, User, Menu } from "lucide-react";
+import { LogOut, User, Menu } from "lucide-react";
+import Image from "next/image";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "./MobileNav";
 
@@ -46,7 +47,7 @@ export function Topbar() {
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-1.5">
-          <Sparkles className="h-4 w-4 text-primary" />
+          <Image src="/logo-white.png" alt="Deca-Dex" width={24} height={24} className="w-6 h-6" />
           <span className="font-bold text-sm">Deca-Dex</span>
         </div>
       </div>
