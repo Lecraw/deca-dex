@@ -85,8 +85,13 @@ export default function PresentationPage() {
       if (!res.ok) {
         let msg = "Upload failed";
         try {
-          const err = await res.json();
-          msg = err.error || msg;
+          const text = await res.text();
+          try {
+            const err = JSON.parse(text);
+            msg = err.error || msg;
+          } catch {
+            msg = text.slice(0, 200) || `Upload failed (${res.status})`;
+          }
         } catch {
           msg = `Upload failed (${res.status})`;
         }

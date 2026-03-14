@@ -196,9 +196,9 @@ export async function POST(
     slidesCreated: parsedSlides.length,
   });
   } catch (err: any) {
-    console.error("Upload handler error:", err);
+    console.error("Upload handler error:", err?.stack || err);
     return NextResponse.json(
-      { error: err.message || "Internal server error during upload" },
+      { error: `Upload error: ${err.message || "Unknown error"}` },
       { status: 500 }
     );
   }
