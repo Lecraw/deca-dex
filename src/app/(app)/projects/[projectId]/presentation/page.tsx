@@ -308,18 +308,20 @@ export default function PresentationPage() {
                 <button
                   key={i}
                   onClick={() => setActivePageIndex(i)}
-                  className={`w-full aspect-video rounded-md overflow-hidden border-2 transition-all ${
+                  className={`w-full rounded-md overflow-hidden border-2 transition-all ${
                     activePageIndex === i
                       ? "border-primary ring-2 ring-primary/30"
                       : "border-border hover:border-primary/50"
                   }`}
                 >
                   {isPdf && pdfDataUrl ? (
-                    <PdfSlidePreview
-                      file={memoizedPdfFile}
-                      pageNumber={i + 1}
-                      width={170}
-                    />
+                    <div className="w-full overflow-hidden" style={{ maxHeight: 110 }}>
+                      <PdfSlidePreview
+                        file={memoizedPdfFile}
+                        pageNumber={i + 1}
+                        width={180}
+                      />
+                    </div>
                   ) : (
                     <div className="w-full h-full bg-gradient-to-b from-blue-900 to-white flex flex-col">
                       <div className="px-2 py-1 flex-1 flex items-end">
