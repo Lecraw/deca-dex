@@ -26,35 +26,65 @@ export async function POST(req: NextRequest) {
       max_tokens: 1024,
       system: `You are a DECA competition scenario generator for the ${eventCode} roleplay event.
 
-Generate a realistic business roleplay scenario that a DECA student would encounter at a competition. The scenario should:
-- Be specific and detailed enough for the student to formulate a response
-- Include a clear business situation or problem
-- Identify who the student is (their role) and who they're speaking to
-- Be appropriate for high school students
-- Be challenging but fair
+Generate a realistic business roleplay scenario that a DECA student would encounter at a competition.
 
-Write the scenario in 2nd person ("You are..."). Include the context, the situation, and what the student needs to address. Keep it to 2-3 paragraphs.
+The scenario MUST include:
+1. A detailed business situation written in 2nd person ("You are...")
+2. The student's role and who they are speaking to
+3. The context, situation, and what they need to address (2-3 paragraphs)
+4. Exactly 4 Key Performance Indicators (KPIs) that the judge will use to evaluate the student's response
 
-Return ONLY the scenario text, no JSON or formatting.`,
+Return the response as JSON in this exact format:
+{
+  "scenario": "The full scenario text here...",
+  "kpis": [
+    "First KPI the student will be evaluated on",
+    "Second KPI the student will be evaluated on",
+    "Third KPI the student will be evaluated on",
+    "Fourth KPI the student will be evaluated on"
+  ]
+}
+
+The KPIs should be specific, measurable performance indicators relevant to the scenario (e.g., "Explain two benefits of the proposed marketing strategy", "Recommend a pricing approach and justify it"). They should match real DECA roleplay KPI style.`,
       messages: [
         {
           role: "user",
-          content: `Generate a roleplay scenario for the ${eventCode} DECA event.`,
+          content: `Generate a roleplay scenario with 4 KPIs for the ${eventCode} DECA event.`,
         },
       ],
     });
 
-    const scenarioText =
+    const rawText =
       message.content[0].type === "text" ? message.content[0].text : "";
 
+    let scenarioData;
+    try {
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      scenarioData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    } catch {
+      scenarioData = null;
+    }
+
+    if (scenarioData?.scenario && scenarioData?.kpis) {
+      return new Response(
+        JSON.stringify({
+          scenario: scenarioData.scenario,
+          kpis: scenarioData.kpis,
+        }),
+        { headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Fallback: treat entire response as scenario text (no KPIs parsed)
     return new Response(
-      JSON.stringify({ scenario: scenarioText }),
+      JSON.stringify({ scenario: rawText, kpis: [] }),
       { headers: { "Content-Type": "application/json" } }
     );
   }
 
   // Evaluate the student's response
   if (action === "evaluate_response") {
+    const { kpis } = body;
     if (!eventCode || !scenario || !response) {
       return new Response(
         JSON.stringify({ error: "eventCode, scenario, and response are required" }),
@@ -62,33 +92,43 @@ Return ONLY the scenario text, no JSON or formatting.`,
       );
     }
 
+    const kpiList = Array.isArray(kpis) && kpis.length > 0
+      ? kpis.map((k: string, i: number) => `  KPI ${i + 1}: ${k}`).join("\n")
+      : "  No specific KPIs provided — evaluate on general business knowledge and communication.";
+
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 2048,
       system: `You are an experienced DECA judge evaluating a student's roleplay response for the ${eventCode} event.
 
-The student was given a scenario and wrote out what they would say. Evaluate their response as if you were a real DECA judge at ICDC.
+The student was given a scenario with specific Key Performance Indicators (KPIs) and wrote out what they would say. Evaluate their response as if you were a real DECA judge at ICDC.
 
-Consider:
-- How well they addressed the business situation
+The KPIs for this scenario are:
+${kpiList}
+
+For each KPI, evaluate whether the student adequately addressed it. Also consider:
 - Professionalism and communication skills
 - Use of business terminology and concepts
 - Problem-solving approach
 - Persuasiveness and confidence in their response
-- Whether they covered all key aspects of the scenario
 
 Return your evaluation as JSON:
 {
   "score": <number 0-100>,
   "overallFeedback": "2-3 sentence overall assessment",
+  "kpiScores": [
+    { "kpi": "the KPI text", "score": <0-25>, "feedback": "how they did on this KPI" }
+  ],
   "strengths": ["strength1", "strength2", "strength3"],
   "improvements": ["improvement1", "improvement2", "improvement3"],
   "tips": ["actionable tip 1", "actionable tip 2", "actionable tip 3"]
-}`,
+}
+
+Each KPI is scored out of 25 points (4 KPIs × 25 = 100 total). The overall score should be the sum of KPI scores.`,
       messages: [
         {
           role: "user",
-          content: `SCENARIO:\n${scenario}\n\nSTUDENT'S RESPONSE:\n${response}`,
+          content: `SCENARIO:\n${scenario}\n\nKPIs:\n${kpiList}\n\nSTUDENT'S RESPONSE:\n${response}`,
         },
       ],
     });

@@ -23,6 +23,7 @@ export default function RoleplayPage() {
   const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [step, setStep] = useState<"select" | "scenario" | "feedback">("select");
   const [scenario, setScenario] = useState("");
+  const [kpis, setKpis] = useState<string[]>([]);
   const [response, setResponse] = useState("");
 
   const { data: events = [] } = useQuery({
@@ -49,6 +50,7 @@ export default function RoleplayPage() {
     },
     onSuccess: (data) => {
       setScenario(data.scenario || "");
+      setKpis(data.kpis || []);
       setStep("scenario");
     },
   });
@@ -62,6 +64,7 @@ export default function RoleplayPage() {
           action: "evaluate_response",
           eventCode: selectedEvent,
           scenario,
+          kpis,
           response,
         }),
       });
@@ -144,7 +147,7 @@ export default function RoleplayPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setStep("select"); setScenario(""); setResponse(""); }}
+            onClick={() => { setStep("select"); setScenario(""); setKpis([]); setResponse(""); }}
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to Events
           </Button>
@@ -163,6 +166,32 @@ export default function RoleplayPage() {
               <p className="text-sm whitespace-pre-wrap">{scenario}</p>
             </CardContent>
           </Card>
+
+          {/* KPIs */}
+          {kpis.length > 0 && (
+            <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-blue-500" /> Key Performance Indicators (KPIs)
+                </CardTitle>
+                <CardDescription>
+                  The judge will evaluate your response on these 4 KPIs — each worth 25 points
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ol className="space-y-2">
+                  {kpis.map((kpi, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm">
+                      <span className="shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-bold">
+                        {i + 1}
+                      </span>
+                      <span>{kpi}</span>
+                    </li>
+                  ))}
+                </ol>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Your Response</label>
@@ -210,7 +239,7 @@ export default function RoleplayPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setStep("select"); setScenario(""); setResponse(""); }}
+            onClick={() => { setStep("select"); setScenario(""); setKpis([]); setResponse(""); }}
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to Events
           </Button>
@@ -234,6 +263,34 @@ export default function RoleplayPage() {
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm">{feedback.overallFeedback}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* KPI Scores */}
+          {feedback.kpiScores && feedback.kpiScores.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-blue-500" /> KPI Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {feedback.kpiScores.map((kpi: any, i: number) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        <span className="text-muted-foreground mr-1">KPI {i + 1}:</span>
+                        {kpi.kpi}
+                      </p>
+                      <Badge variant={kpi.score >= 20 ? "default" : kpi.score >= 15 ? "secondary" : "destructive"}>
+                        {kpi.score}/25
+                      </Badge>
+                    </div>
+                    <Progress value={(kpi.score / 25) * 100} className="h-2" />
+                    <p className="text-xs text-muted-foreground">{kpi.feedback}</p>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}
