@@ -21,10 +21,12 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: "eventCode required" }), { status: 400 });
     }
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system: `You are a DECA competition scenario generator for the ${eventCode} roleplay event.
+    let message;
+    try {
+      message = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        system: `You are a DECA competition scenario generator for the ${eventCode} roleplay event.
 
 Generate a realistic business roleplay scenario that a DECA student would encounter at a competition.
 
@@ -46,13 +48,20 @@ Return the response as JSON in this exact format:
 }
 
 The KPIs should be specific, measurable performance indicators relevant to the scenario (e.g., "Explain two benefits of the proposed marketing strategy", "Recommend a pricing approach and justify it"). They should match real DECA roleplay KPI style.`,
-      messages: [
-        {
-          role: "user",
-          content: `Generate a roleplay scenario with 4 KPIs for the ${eventCode} DECA event.`,
-        },
-      ],
-    });
+        messages: [
+          {
+            role: "user",
+            content: `Generate a roleplay scenario with 4 KPIs for the ${eventCode} DECA event.`,
+          },
+        ],
+      });
+    } catch (err: any) {
+      console.error("Anthropic API error (roleplay scenario):", err.message);
+      return new Response(
+        JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     const rawText =
       message.content[0].type === "text" ? message.content[0].text : "";
@@ -96,10 +105,12 @@ The KPIs should be specific, measurable performance indicators relevant to the s
       ? kpis.map((k: string, i: number) => `  KPI ${i + 1}: ${k}`).join("\n")
       : "  No specific KPIs provided — evaluate on general business knowledge and communication.";
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      system: `You are an experienced DECA judge evaluating a student's roleplay response for the ${eventCode} event.
+    let message;
+    try {
+      message = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: `You are an experienced DECA judge evaluating a student's roleplay response for the ${eventCode} event.
 
 The student was given a scenario with specific Key Performance Indicators (KPIs) and wrote out what they would say. Evaluate their response as if you were a real DECA judge at ICDC.
 
@@ -132,6 +143,13 @@ Each KPI is scored out of 25 points (4 KPIs × 25 = 100 total). The overall scor
         },
       ],
     });
+    } catch (err: any) {
+      console.error("Anthropic API error (roleplay evaluate):", err.message);
+      return new Response(
+        JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     const text =
       message.content[0].type === "text" ? message.content[0].text : "";

@@ -59,7 +59,10 @@ export default function PresentationPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const pdfDataUrl = fileData?.fileData || null;
+  const fileDataUrl = fileData?.fileData || null;
+  const fileName = fileData?.fileName || project?.uploadedFileName || "";
+  const isPdf = fileName.toLowerCase().endsWith(".pdf");
+  const pdfDataUrl = isPdf ? fileDataUrl : null;
   const memoizedPdfFile = useMemo(
     () => (pdfDataUrl ? { url: pdfDataUrl } : null),
     [pdfDataUrl]
@@ -87,8 +90,8 @@ export default function PresentationPage() {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["project-file", projectId] });
       setActivePageIndex(0);
-    } catch {
-      alert("Upload failed");
+    } catch (err: any) {
+      alert(err?.message || "Upload failed — check your connection and try again");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -156,9 +159,12 @@ export default function PresentationPage() {
           <div>
             <h2 className="text-xl font-semibold">Upload Your Presentation</h2>
             <p className="text-muted-foreground text-sm mt-1">
-              Upload your pitch deck or written event as a PDF so the AI can
-              see and grade your actual slides.
+              Upload your pitch deck or written event so the AI can grade your actual work.
             </p>
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              <p><span className="font-medium text-foreground">PDF</span> — visual slide preview + AI grading</p>
+              <p><span className="font-medium text-foreground">PPTX</span> — text-based view + AI grading</p>
+            </div>
           </div>
           <input
             type="file"
@@ -281,17 +287,30 @@ export default function PresentationPage() {
                       : "border-border hover:border-primary/50"
                   }`}
                 >
-                  {pdfDataUrl ? (
+                  {isPdf && pdfDataUrl ? (
                     <PdfSlidePreview
                       file={memoizedPdfFile}
                       pageNumber={i + 1}
                       width={170}
                     />
                   ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">
-                        Slide {i + 1}
-                      </span>
+                    <div className="w-full h-full bg-gradient-to-b from-blue-900 to-white flex flex-col">
+                      <div className="px-2 py-1 flex-1 flex items-end">
+                        <p className="text-[8px] font-semibold text-white truncate leading-tight">
+                          {project?.slides?.[i]?.title || `Slide ${i + 1}`}
+                        </p>
+                      </div>
+                      <div className="bg-white px-2 py-1 flex-[2]">
+                        <p className="text-[7px] text-slate-600 line-clamp-2 leading-tight">
+                          {(() => {
+                            const slide = project?.slides?.[i];
+                            if (!slide) return "";
+                            const c = typeof slide.contentJson === "string"
+                              ? JSON.parse(slide.contentJson) : slide.contentJson;
+                            return c?.blocks?.[0]?.content || "";
+                          })()}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </button>
@@ -306,7 +325,7 @@ export default function PresentationPage() {
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : pdfDataUrl ? (
+          ) : isPdf && pdfDataUrl ? (
             <>
               {/* PDF Slide Image */}
               <div className="flex justify-center">
@@ -363,67 +382,76 @@ export default function PresentationPage() {
                 </Card>
               )}
             </>
-          ) : (
-            /* No PDF data (e.g. PPTX without conversion) — show text-based slides */
+          ) : project?.slides?.length > 0 ? (
+            /* PPTX or fallback — show text-based slides */
             <>
-              {project.slides?.length > 0 ? (
-                <>
-                  <div className="flex justify-center">
-                    <div className="w-full max-w-4xl aspect-video rounded-lg overflow-hidden shadow-xl border border-border">
-                      <div
-                        className="bg-gradient-to-r from-blue-900 to-blue-700 px-8 py-6 flex items-end"
-                        style={{ height: "30%" }}
-                      >
-                        <h2 className="text-white text-2xl md:text-3xl font-bold">
-                          {project.slides[activePageIndex]?.title || `Slide ${activePageIndex + 1}`}
-                        </h2>
-                      </div>
-                      <div
-                        className="bg-white px-8 py-6 overflow-auto"
-                        style={{ height: "70%" }}
-                      >
-                        <p className="text-slate-700 text-sm md:text-base whitespace-pre-wrap leading-relaxed">
-                          {(() => {
-                            const slide = project.slides[activePageIndex];
-                            if (!slide) return "";
-                            const content =
-                              typeof slide.contentJson === "string"
-                                ? JSON.parse(slide.contentJson)
-                                : slide.contentJson;
-                            return content?.blocks?.[0]?.content || "";
-                          })()}
-                        </p>
-                      </div>
-                    </div>
+              <div className="flex justify-center">
+                <div className="w-full max-w-4xl aspect-video rounded-lg overflow-hidden shadow-xl border border-border">
+                  <div
+                    className="bg-gradient-to-r from-blue-900 to-blue-700 px-8 py-6 flex items-end"
+                    style={{ height: "30%" }}
+                  >
+                    <h2 className="text-white text-2xl md:text-3xl font-bold">
+                      {project.slides[activePageIndex]?.title || `Slide ${activePageIndex + 1}`}
+                    </h2>
                   </div>
-                  <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={activePageIndex <= 0}
-                      onClick={() => setActivePageIndex((p) => p - 1)}
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Slide {activePageIndex + 1} of {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={activePageIndex >= totalPages - 1}
-                      onClick={() => setActivePageIndex((p) => p + 1)}
-                    >
-                      Next <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
+                  <div
+                    className="bg-white px-8 py-6 overflow-auto"
+                    style={{ height: "70%" }}
+                  >
+                    <p className="text-slate-700 text-sm md:text-base whitespace-pre-wrap leading-relaxed">
+                      {(() => {
+                        const slide = project.slides[activePageIndex];
+                        if (!slide) return "";
+                        const content =
+                          typeof slide.contentJson === "string"
+                            ? JSON.parse(slide.contentJson)
+                            : slide.contentJson;
+                        return content?.blocks?.[0]?.content || "";
+                      })()}
+                    </p>
                   </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  No slides found. Upload a PDF to see your presentation.
                 </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activePageIndex <= 0}
+                  onClick={() => setActivePageIndex((p) => p - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Slide {activePageIndex + 1} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activePageIndex >= totalPages - 1}
+                  onClick={() => setActivePageIndex((p) => p + 1)}
+                >
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+
+              {/* Tip for PPTX users */}
+              {!isPdf && project.uploadedFileName && (
+                <Card className="max-w-4xl mx-auto w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-blue-700 dark:text-blue-400">
+                      Showing extracted text from your PPTX. For a visual preview of your actual slides, export as PDF and re-upload.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              No slides found. Upload a PDF or PPTX to see your presentation.
+            </div>
           )}
 
           {/* AI Feedback Results */}

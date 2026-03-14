@@ -83,17 +83,26 @@ export async function POST(req: NextRequest) {
     sections: JSON.parse(event.sectionsJson),
   };
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2048,
-    system: judgeSystem(eventData),
-    messages: [
-      {
-        role: "user",
-        content: `Please score this project:\n\n${projectContent}`,
-      },
-    ],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system: judgeSystem(eventData),
+      messages: [
+        {
+          role: "user",
+          content: `Please score this project:\n\n${projectContent}`,
+        },
+      ],
+    });
+  } catch (err: any) {
+    console.error("Anthropic API error (judge):", err.message);
+    return NextResponse.json(
+      { error: "AI service temporarily unavailable. Please try again." },
+      { status: 502 }
+    );
+  }
 
   const text =
     message.content[0].type === "text" ? message.content[0].text : "";

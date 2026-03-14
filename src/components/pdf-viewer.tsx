@@ -3,7 +3,7 @@
 import { Document, Page, pdfjs } from "react-pdf";
 import { Loader2, FileImage } from "lucide-react";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 export function PdfSlidePreview({
   file,

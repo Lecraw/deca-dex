@@ -43,19 +43,28 @@ export async function POST(req: NextRequest) {
     sections: JSON.parse(event.sectionsJson),
   };
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 2048,
-    system: ideaGeneratorSystem(eventData),
-    messages: [
-      {
-        role: "user",
-        content:
-          userPrompt ||
-          `Generate ${count} creative and competition-winning business ideas for the ${event.name} DECA event. Make them innovative, feasible for high school students, and aligned with current trends.`,
-      },
-    ],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      system: ideaGeneratorSystem(eventData),
+      messages: [
+        {
+          role: "user",
+          content:
+            userPrompt ||
+            `Generate ${count} creative and competition-winning business ideas for the ${event.name} DECA event. Make them innovative, feasible for high school students, and aligned with current trends.`,
+        },
+      ],
+    });
+  } catch (err: any) {
+    console.error("Anthropic API error (generate-idea):", err.message);
+    return NextResponse.json(
+      { error: "AI service temporarily unavailable. Please try again." },
+      { status: 502 }
+    );
+  }
 
   const text =
     message.content[0].type === "text" ? message.content[0].text : "";

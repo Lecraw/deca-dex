@@ -29,21 +29,30 @@ export async function POST(req: NextRequest) {
   const competitionDate = new Date();
   competitionDate.setDate(competitionDate.getDate() + 30);
 
-  const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1024,
-    system: plannerSystem(
-      projects[0]?.event?.name || "DECA Event",
-      competitionDate.toISOString().split("T")[0],
-      projectContext
-    ),
-    messages: [
-      {
-        role: "user",
-        content: `Generate a daily task schedule for the next 2 weeks to help me prepare for DECA. My current projects: ${projectContext}`,
-      },
-    ],
-  });
+  let message;
+  try {
+    message = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1024,
+      system: plannerSystem(
+        projects[0]?.event?.name || "DECA Event",
+        competitionDate.toISOString().split("T")[0],
+        projectContext
+      ),
+      messages: [
+        {
+          role: "user",
+          content: `Generate a daily task schedule for the next 2 weeks to help me prepare for DECA. My current projects: ${projectContext}`,
+        },
+      ],
+    });
+  } catch (err: any) {
+    console.error("Anthropic API error (planner):", err.message);
+    return NextResponse.json(
+      { error: "AI service temporarily unavailable. Please try again." },
+      { status: 502 }
+    );
+  }
 
   const text = message.content[0].type === "text" ? message.content[0].text : "";
 
