@@ -47,7 +47,7 @@ export function Topbar() {
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-1.5">
-          <Image src="/logo-white.png" alt="Deca-Dex" width={24} height={24} className="w-6 h-6" />
+          <Image src="/logo-white.png" alt="Deca-Dex" width={32} height={32} className="w-8 h-8" />
           <span className="font-bold text-sm">Deca-Dex</span>
         </div>
       </div>

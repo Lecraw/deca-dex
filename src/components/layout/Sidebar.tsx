@@ -39,7 +39,7 @@ export function Sidebar() {
       )}
     >
       <div className="flex items-center gap-2 p-4 border-b">
-        <Image src="/logo-white.png" alt="Deca-Dex" width={32} height={32} className="w-8 h-8" />
+        <Image src="/logo-white.png" alt="Deca-Dex" width={36} height={36} className="w-9 h-9 shrink-0" />
         {!collapsed && (
           <span className="font-bold text-lg tracking-tight">Deca-Dex</span>
         )}

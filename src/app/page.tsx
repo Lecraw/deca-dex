@@ -57,7 +57,7 @@ export default function LandingPage() {
       <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo-white.png" alt="Deca-Dex" width={32} height={32} className="w-8 h-8" />
+            <Image src="/logo-white.png" alt="Deca-Dex" width={40} height={40} className="w-10 h-10" />
             <span className="font-bold text-lg">Deca-Dex</span>
           </div>
           <div className="flex items-center gap-2">
