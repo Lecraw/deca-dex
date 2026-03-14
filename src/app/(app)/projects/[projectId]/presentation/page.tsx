@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -40,6 +40,21 @@ export default function PresentationPage() {
   const [uploading, setUploading] = useState(false);
   const [pdfNumPages, setPdfNumPages] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [pdfWidth, setPdfWidth] = useState(960);
+
+  // Track container width for responsive PDF rendering
+  useEffect(() => {
+    const el = pdfContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setPdfWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
@@ -341,18 +356,21 @@ export default function PresentationPage() {
             <>
               {/* PDF Slide Image */}
               <div className="flex justify-center">
-                <div className="w-full max-w-4xl rounded-lg overflow-hidden shadow-xl border border-border bg-white">
+                <div
+                  ref={pdfContainerRef}
+                  className="w-full max-w-5xl rounded-lg overflow-hidden shadow-xl border border-border bg-white"
+                >
                   <PdfSlideMain
                     file={memoizedPdfFile}
                     pageNumber={activePageIndex + 1}
-                    width={800}
+                    width={pdfWidth}
                     onLoadSuccess={({ numPages }) => setPdfNumPages(numPages)}
                   />
                 </div>
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
+              <div className="flex items-center justify-between max-w-5xl mx-auto w-full">
                 <Button
                   variant="outline"
                   size="sm"
@@ -376,7 +394,7 @@ export default function PresentationPage() {
 
               {/* Extracted Text for this slide */}
               {project.slides?.[activePageIndex] && (
-                <Card className="max-w-4xl mx-auto w-full">
+                <Card className="max-w-5xl mx-auto w-full">
                   <CardContent className="p-4">
                     <p className="text-xs font-medium text-muted-foreground mb-1">
                       Extracted Text — Slide {activePageIndex + 1}
@@ -428,7 +446,7 @@ export default function PresentationPage() {
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
+              <div className="flex items-center justify-between max-w-5xl mx-auto w-full">
                 <Button
                   variant="outline"
                   size="sm"
@@ -452,7 +470,7 @@ export default function PresentationPage() {
 
               {/* Tip for PPTX users */}
               {!isPdf && project.uploadedFileName && (
-                <Card className="max-w-4xl mx-auto w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+                <Card className="max-w-5xl mx-auto w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
                   <CardContent className="p-3">
                     <p className="text-xs text-blue-700 dark:text-blue-400">
                       Showing extracted text from your PPTX. For a visual preview of your actual slides, export as PDF and re-upload.
@@ -469,7 +487,7 @@ export default function PresentationPage() {
 
           {/* AI Feedback Results */}
           {runFeedback.data?.feedback && (
-            <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 max-w-4xl mx-auto w-full">
+            <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 max-w-5xl mx-auto w-full">
               <CardContent className="p-4">
                 <p className="text-xs font-medium mb-2">AI Feedback</p>
                 <div className="space-y-2">
@@ -493,7 +511,7 @@ export default function PresentationPage() {
 
           {/* Judge Results */}
           {runJudge.data?.score && (
-            <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 max-w-4xl mx-auto w-full">
+            <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 max-w-5xl mx-auto w-full">
               <CardContent className="p-4">
                 <p className="text-xs font-medium mb-2">Judge Simulation</p>
                 <div className="text-center mb-3">
@@ -511,7 +529,7 @@ export default function PresentationPage() {
 
           {/* Compliance Results */}
           {runCompliance.data?.score !== undefined && (
-            <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 max-w-4xl mx-auto w-full">
+            <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 max-w-5xl mx-auto w-full">
               <CardContent className="p-4">
                 <p className="text-xs font-medium mb-2">Compliance Check</p>
                 <div className="text-center mb-3">
