@@ -85,7 +85,8 @@ export default function PlannerPage() {
   const completedCount = completedTasks.length;
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0;
 
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   // Categorize incomplete tasks
   const overdueTasks = incompleteTasks.filter(
