@@ -522,7 +522,9 @@ export default function RoleplaySessionPage() {
             <CardContent>
               <textarea
                 className="w-full min-h-[150px] max-h-[300px] bg-muted/30 rounded-lg p-3 text-sm leading-relaxed resize-y border-0 focus:outline-none focus:ring-1 focus:ring-primary/30"
-                placeholder={isListening
+                placeholder={!speechSupported
+                  ? "Type your presentation response here..."
+                  : isListening
                   ? "Listening... Start speaking and your words will appear here. You can also type or edit directly."
                   : "Press the mic button to speak, or just type your response here."}
                 value={transcript + (interimTranscript ? interimTranscript : "")}
@@ -553,7 +555,10 @@ export default function RoleplaySessionPage() {
                   <span>{speechError}</span>
                 </div>
               ) : !speechSupported ? (
-                "Type your response in the box above"
+                <div className="flex items-center gap-2 text-yellow-500">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>Speech recognition requires Chrome. Type your response in the box above instead.</span>
+                </div>
               ) : isListening ? (
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-3 w-3">
