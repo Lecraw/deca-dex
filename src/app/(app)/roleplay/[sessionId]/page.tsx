@@ -221,6 +221,13 @@ export default function RoleplaySessionPage() {
 
   const handleStartPresenting = () => {
     setPhase("presenting");
+    // Auto-start mic when entering presenting phase
+    setTimeout(() => {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        startListening();
+      }
+    }, 500);
   };
 
   const handleSubmitSpeech = () => {
@@ -539,17 +546,17 @@ export default function RoleplaySessionPage() {
           </div>
 
           <div className="flex gap-3">
-            {transcript.trim() && phase === "followup" && (
+            {transcript.trim() && (
               <Button className="flex-1" onClick={handleSubmitSpeech}>
                 <Send className="h-4 w-4 mr-2" />
-                Submit Answer
+                {phase === "presenting" ? "Submit Presentation" : "Submit Answer"}
               </Button>
             )}
             <Button
-              variant={transcript.trim() || messages.length > 0 ? "default" : "outline"}
+              variant="outline"
               className="flex-1"
               onClick={handleFinishRoleplay}
-              disabled={endSession.isPending || (!transcript.trim() && messages.length === 0)}
+              disabled={endSession.isPending}
             >
               {endSession.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scoring...</>

@@ -88,15 +88,20 @@ export default function PlannerPage() {
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
+  const getLocalDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   // Categorize incomplete tasks
   const overdueTasks = incompleteTasks.filter(
-    (t: any) => t.dueDate && t.dueDate.split("T")[0] < today
+    (t: any) => t.dueDate && getLocalDate(t.dueDate) < today
   );
   const todayTasks = incompleteTasks.filter(
-    (t: any) => t.dueDate && t.dueDate.split("T")[0] === today
+    (t: any) => t.dueDate && getLocalDate(t.dueDate) === today
   );
   const upcomingTasks = incompleteTasks.filter(
-    (t: any) => t.dueDate && t.dueDate.split("T")[0] > today
+    (t: any) => t.dueDate && getLocalDate(t.dueDate) > today
   );
   const noDueDateTasks = incompleteTasks.filter((t: any) => !t.dueDate);
 

@@ -59,9 +59,13 @@ export default function DashboardPage() {
 
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const todayTasks = tasks.filter(
-    (t: any) => t.dueDate && t.dueDate.split("T")[0] === today && !t.completed
-  );
+  const todayTasks = tasks.filter((t: any) => {
+    if (!t.dueDate || t.completed) return false;
+    // Compare using local date to handle timezone differences
+    const d = new Date(t.dueDate);
+    const taskDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return taskDate === today;
+  });
 
   return (
     <div className="space-y-6">
