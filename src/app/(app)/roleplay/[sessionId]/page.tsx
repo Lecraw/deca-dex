@@ -56,6 +56,7 @@ export default function RoleplaySessionPage() {
   const [presentTimeLeft, setPresentTimeLeft] = useState(600); // 10 minutes
   const [followUpIndex, setFollowUpIndex] = useState(0);
   const [speechSupported, setSpeechSupported] = useState(true);
+  const [speechError, setSpeechError] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -126,7 +127,20 @@ export default function RoleplaySessionPage() {
   // Initialize speech recognition
   const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      setSpeechError("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    // Check if we're on a secure context (required for speech recognition)
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setSpeechSupported(false);
+      setSpeechError("Speech recognition requires HTTPS. Please use localhost or a secure connection.");
+      return;
+    }
+
+    setSpeechError(null);
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
@@ -154,10 +168,11 @@ export default function RoleplaySessionPage() {
       console.error("Speech recognition error:", event.error);
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         setSpeechSupported(false);
-      }
-      // For aborted/network errors, try to keep going
-      if (event.error === "aborted" || event.error === "network") {
-        // Will auto-restart via onend handler
+        setSpeechError("Microphone access was denied. Please allow microphone access in your browser settings and try again.");
+      } else if (event.error === "no-speech") {
+        setSpeechError("No speech detected. Make sure your microphone is working and try speaking louder.");
+      } else if (event.error === "audio-capture") {
+        setSpeechError("No microphone found. Please connect a microphone and try again.");
       }
     };
 
@@ -173,8 +188,14 @@ export default function RoleplaySessionPage() {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch (err: any) {
+      console.error("Failed to start speech recognition:", err);
+      setSpeechError("Failed to start speech recognition: " + (err.message || "Unknown error"));
+      setSpeechSupported(false);
+    }
   }, []);
 
   const stopListening = useCallback(() => {
@@ -526,7 +547,12 @@ export default function RoleplaySessionPage() {
               </Button>
             )}
             <div className="flex-1 text-sm text-muted-foreground">
-              {!speechSupported ? (
+              {speechError ? (
+                <div className="flex items-center gap-2 text-red-500">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{speechError}</span>
+                </div>
+              ) : !speechSupported ? (
                 "Type your response in the box above"
               ) : isListening ? (
                 <div className="flex items-center gap-2">
