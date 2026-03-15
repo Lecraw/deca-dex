@@ -152,8 +152,12 @@ export default function RoleplaySessionPage() {
 
     recognition.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error);
-      if (event.error === "not-allowed") {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         setSpeechSupported(false);
+      }
+      // For aborted/network errors, try to keep going
+      if (event.error === "aborted" || event.error === "network") {
+        // Will auto-restart via onend handler
       }
     };
 
@@ -221,13 +225,8 @@ export default function RoleplaySessionPage() {
 
   const handleStartPresenting = () => {
     setPhase("presenting");
-    // Auto-start mic when entering presenting phase
-    setTimeout(() => {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        startListening();
-      }
-    }, 500);
+    // Start mic immediately (must be in same user gesture, no setTimeout)
+    startListening();
   };
 
   const handleSubmitSpeech = () => {
@@ -288,28 +287,26 @@ export default function RoleplaySessionPage() {
   };
 
   const handleFinishRoleplay = () => {
-    // Include any unsent transcript in messages before ending
+    stopListening();
     const pendingText = transcript.trim();
+
+    // Build full transcript from all messages + any pending text
+    const allMsgs = [...messages];
     if (pendingText) {
-      const userMsg: Message = {
-        role: "user",
-        content: pendingText,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => {
-        const updated = [...prev, userMsg];
-        // Use updated messages for the API call
-        const allMessages = updated.map((m) => `${m.role}: ${m.content}`).join("\n\n");
-        stopListening();
-        setTranscript("");
-        setInterimTranscript("");
-        endSession.mutate(allMessages);
-        return updated;
-      });
-    } else {
-      stopListening();
-      endSession.mutate(undefined);
+      allMsgs.push({ role: "user", content: pendingText, timestamp: new Date().toISOString() });
     }
+
+    if (allMsgs.length === 0) {
+      // Nothing to grade
+      return;
+    }
+
+    setMessages(allMsgs);
+    setTranscript("");
+    setInterimTranscript("");
+
+    const fullTranscript = allMsgs.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+    endSession.mutate(fullTranscript);
   };
 
   const formatTime = (seconds: number) => {
@@ -556,7 +553,7 @@ export default function RoleplaySessionPage() {
               variant="outline"
               className="flex-1"
               onClick={handleFinishRoleplay}
-              disabled={endSession.isPending}
+              disabled={endSession.isPending || (!transcript.trim() && messages.length === 0)}
             >
               {endSession.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scoring...</>
