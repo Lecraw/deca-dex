@@ -20,6 +20,8 @@ import {
   Mic2,
   LayoutList,
   RefreshCw,
+  BarChart3,
+  Image,
 } from "lucide-react";
 
 const categoryIcons: Record<string, any> = {
@@ -42,6 +44,7 @@ interface TipsData {
   generalTips: { tip: string; category: string }[];
   creativeHooks: { line: string; context: string }[];
   propIdeas: { prop: string; howToUse: string }[];
+  graphicIdeas: { visual: string; slide: string; why: string }[];
 }
 
 export default function TipsPage() {
@@ -206,6 +209,39 @@ export default function TipsPage() {
                     <div>
                       <p className="text-sm font-medium">{item.prop}</p>
                       <p className="text-xs text-muted-foreground mt-1">{item.howToUse}</p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Graphic & Visual Ideas */}
+          {tips.graphicIdeas && tips.graphicIdeas.length > 0 && (
+            <Card className="border-sky-200 dark:border-sky-900">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-sky-500" />
+                  Graphic &amp; Visual Ideas
+                </CardTitle>
+                <CardDescription>
+                  Charts, diagrams, and visuals to strengthen your slides
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {tips.graphicIdeas.map((item, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-sky-50/50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/50">
+                    <div className="flex items-start gap-3">
+                      <Image className="h-5 w-5 text-sky-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">{item.visual}</p>
+                        <div className="flex flex-wrap gap-2 mt-1.5">
+                          <Badge variant="outline" className="text-[10px] border-sky-200 dark:border-sky-800">
+                            📍 {item.slide}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{item.why}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
