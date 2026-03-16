@@ -111,43 +111,41 @@ Return ONLY the JSON object, no markdown, no code blocks, no extra text.`,
       ],
     });
   } catch (err: any) {
-    console.error("Anthropic API error (tips):", err.message);
     return NextResponse.json(
-      { error: "AI service temporarily unavailable. Please try again." },
+      { error: `API error: ${err.message}` },
       { status: 502 }
     );
   }
 
   const rawText = message.content[0].type === "text" ? message.content[0].text : "";
 
+  if (!rawText) {
+    return NextResponse.json(
+      { error: `Empty response. Stop: ${message.stop_reason}. Content types: ${message.content.map((c: any) => c.type).join(",")}` },
+      { status: 500 }
+    );
+  }
+
   let result;
   try {
-    // Try parsing the whole response first
     result = JSON.parse(rawText);
   } catch {
     try {
-      // Try extracting JSON from markdown code blocks
       const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (codeBlockMatch) {
         result = JSON.parse(codeBlockMatch[1].trim());
       } else {
-        // Try extracting any JSON object
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
       }
     } catch {
-      console.error("Failed to parse tips JSON. Raw response:", rawText.substring(0, 500));
       result = null;
     }
   }
 
   if (!result) {
     return NextResponse.json(
-      {
-        error: message.stop_reason === "max_tokens" ? "Response was too long. Please try again." : "Failed to generate tips. Please try again.",
-        debug_stop_reason: message.stop_reason,
-        debug_raw: rawText.substring(0, 300),
-      },
+      { error: `Parse failed. Stop: ${message.stop_reason}. Start: ${rawText.substring(0, 150)}` },
       { status: 500 }
     );
   }
