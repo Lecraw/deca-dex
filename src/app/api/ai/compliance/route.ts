@@ -98,13 +98,15 @@ ${guidelinesText}
 Rubric categories:
 ${eventRubric.map((r: any) => `- ${r.name} (${r.maxPoints} pts): ${r.description}`).join("\n")}
 
-Analyze the student's project and check for:
-1. Whether all required sections are present and have substantive content
-2. Whether the content aligns with DECA event requirements and rubric expectations
-3. Content quality issues (too vague, missing data/evidence, off-topic)
-4. Structural issues (missing bibliography, poor organization)
-5. Slide/page count compliance (IMPORTANT: do NOT count supplemental pages like Statement of Assurances, Academic Integrity forms, cover pages, or appendix pages toward the slide limit — only count actual content/presentation slides)
-6. Whether the project would score well against the rubric categories
+Analyze the student's project. Remember these are high school students — be encouraging and constructive. Only mark a check as FAILED for genuine issues, not stylistic preferences or minor wording nitpicks.
+
+Check for:
+1. Whether required sections are present (pass if they exist with any reasonable content)
+2. Slide/page count compliance (IMPORTANT: do NOT count supplemental pages like Statement of Assurances, Academic Integrity forms, cover pages, or appendix pages toward the slide limit)
+3. Major structural issues (only fail for truly missing critical elements)
+4. Content alignment with event requirements
+
+Mark a check as PASSED if the student made a reasonable attempt. Use "warning" severity for suggestions and improvements — reserve "error" only for hard rule violations (wrong page count, missing required sections entirely).
 
 Return your analysis as JSON with this exact structure:
 {
@@ -117,19 +119,18 @@ Return your analysis as JSON with this exact structure:
       "message": "Specific feedback about this check"
     }
   ],
-  "summary": "2-3 sentence overall assessment"
+  "summary": "2-3 sentence encouraging overall assessment"
 }
 
-Include 8-15 checks covering structural requirements, content quality, and rubric alignment. Be specific and actionable.
+Include 8-12 checks. Most checks should PASS for a project with reasonable effort.
 
-SCORING GUIDE — the score MUST be consistent with the check results:
-- If ALL checks pass: score should be 92-100
-- If most checks pass with only minor suggestions: score should be 85-92
-- If a few checks have warnings but no errors: score should be 70-85
-- If multiple checks fail with errors: score should be 45-70
-- If major structural issues or missing sections: score should be below 45
+SCORING GUIDE:
+- A project with all sections present and decent content: 80-95
+- A project with minor gaps or areas to improve: 65-80
+- A project missing multiple required sections: 45-65
+- Only score below 45 if the project is fundamentally incomplete
 
-IMPORTANT: Do NOT penalize heavily for minor style or wording suggestions. The score must directly reflect the check results — if checks are mostly green, the score must be high.`;
+Be generous with the score — the goal is to motivate students, not discourage them. Frame the summary positively.`;
 
   const userId = session.user.id;
 

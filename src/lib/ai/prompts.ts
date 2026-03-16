@@ -82,7 +82,9 @@ Key Indicators: ${r.indicators.join(", ")}`
   )
   .join("\n")}
 
-Score each category on a 0 to max scale. Be fair but rigorous — score like a real DECA judge at ICDC level.
+Score each category on a 0 to max scale. Be encouraging and constructive — these are high school students doing their best. Give credit for effort and good ideas even if execution isn't perfect. A solid project with clear effort should score 70-85% of max points. Only give very low scores if major sections are completely missing or the content is clearly off-topic.
+
+Focus feedback on what they did well FIRST, then suggest improvements. Frame improvements as opportunities, not failures.
 
 Return JSON:
 {
