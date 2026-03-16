@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     let message;
     try {
       message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 2048,
         system: `You are a DECA competition scenario generator for the ${event.name} (${eventCode}) event.
 
@@ -340,7 +340,7 @@ Return JSON:
     let message;
     try {
       message = await anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 3000,
         system: `You are an experienced DECA judge at ICDC level, evaluating a student's roleplay performance for the ${scenarioData.eventName} (${roleplaySession.eventCode}) event.
 
