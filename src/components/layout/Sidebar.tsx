@@ -39,9 +39,9 @@ export function Sidebar() {
       )}
     >
       <div className="flex items-center gap-2 p-4 border-b">
-        <Image src="/logo-white.png" alt="Draftor" width={36} height={36} className="w-9 h-9 shrink-0" />
+        <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0" />
         {!collapsed && (
-          <span className="font-bold text-lg tracking-tight">Draftor</span>
+          <span className="font-bold text-lg tracking-tight">Nexari</span>
         )}
         <Button
           variant="ghost"
