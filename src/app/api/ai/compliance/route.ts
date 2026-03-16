@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { anthropic } from "@/lib/anthropic";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
-
-export const maxDuration = 25;
+import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -75,7 +73,6 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Build guidelines string
   const guidelinesText = Array.isArray(eventGuidelines)
     ? eventGuidelines.join("\n")
     : [
@@ -84,7 +81,6 @@ export async function POST(req: NextRequest) {
         ...(eventGuidelines.tips || []),
       ].join("\n");
 
-  // Call AI for comprehensive compliance review
   const systemPrompt = `You are a DECA competition compliance reviewer for the "${event.name}" (${event.code}) event.
 
 Event type: ${event.eventType}
@@ -135,60 +131,76 @@ SCORING GUIDE — the score MUST be consistent with the check results:
 
 IMPORTANT: Do NOT penalize heavily for minor style or wording suggestions. The score must directly reflect the check results — if checks are mostly green, the score must be high.`;
 
-  let message;
-  try {
-    message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content: `Please review this project for DECA compliance:\n\n${projectContent}`,
-        },
-      ],
-    });
-  } catch (err: any) {
-    console.error("Anthropic API error (compliance):", err.message);
-    return NextResponse.json(
-      { error: "AI service temporarily unavailable. Please try again." },
-      { status: 502 }
-    );
-  }
+  const userId = session.user.id;
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  // Use streaming to avoid Netlify timeout
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        let fullText = "";
 
-  let result;
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-  } catch {
-    result = null;
-  }
+        const messageStream = client.messages.stream({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [
+            {
+              role: "user",
+              content: `Please review this project for DECA compliance:\n\n${projectContent}`,
+            },
+          ],
+        });
 
-  if (!result) {
-    return NextResponse.json(
-      { error: "Failed to parse compliance response" },
-      { status: 500 }
-    );
-  }
+        messageStream.on("text", (text) => {
+          fullText += text;
+          controller.enqueue(encoder.encode(" "));
+        });
 
-  const score = Math.max(0, Math.min(100, Math.round(result.score)));
-  const checks = result.checks || [];
+        await messageStream.finalMessage();
 
-  // Update project compliance
-  await prisma.project.update({
-    where: { id: projectId },
-    data: {
-      complianceJson: JSON.stringify({ score, checks, summary: result.summary, overrides }),
-      readinessScore: score,
+        let result;
+        try {
+          const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+          result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        } catch {
+          result = null;
+        }
+
+        if (!result) {
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "Failed to parse compliance response" })));
+          controller.close();
+          return;
+        }
+
+        const score = Math.max(0, Math.min(100, Math.round(result.score)));
+        const checks = result.checks || [];
+
+        await prisma.project.update({
+          where: { id: projectId },
+          data: {
+            complianceJson: JSON.stringify({ score, checks, summary: result.summary, overrides }),
+            readinessScore: score,
+          },
+        });
+
+        await awardXp(userId, "RUN_COMPLIANCE", { projectId });
+        await checkAndAwardBadges(userId);
+
+        controller.enqueue(encoder.encode(JSON.stringify({ score, maxScore: 100, checks, summary: result.summary, overrides })));
+        controller.close();
+      } catch (err: any) {
+        controller.enqueue(encoder.encode(JSON.stringify({ error: `API error: ${err.message}` })));
+        controller.close();
+      }
     },
   });
 
-  // Award XP for running compliance check
-  await awardXp(session.user.id, "RUN_COMPLIANCE", { projectId });
-  await checkAndAwardBadges(session.user.id);
-
-  return NextResponse.json({ score, maxScore: 100, checks, summary: result.summary, overrides });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain",
+      "Cache-Control": "no-cache",
+    },
+  });
 }

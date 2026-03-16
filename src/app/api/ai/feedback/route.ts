@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { feedbackSystem } from "@/lib/ai/prompts";
 import type { DecaEventData } from "@/types/deca";
-
-export const maxDuration = 25;
+import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -46,61 +44,80 @@ export async function POST(req: NextRequest) {
     sections: JSON.parse(event.sectionsJson),
   };
 
-  let message;
-  try {
-    message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      system: feedbackSystem(eventData),
-      messages: [
-        {
-          role: "user",
-          content: `Please review this content and provide feedback:\n\n${content}`,
-        },
-      ],
-    });
-  } catch (err: any) {
-    console.error("Anthropic API error (feedback):", err.message);
-    return NextResponse.json(
-      { error: "AI service temporarily unavailable. Please try again." },
-      { status: 502 }
-    );
-  }
+  const userId = session.user.id;
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  // Use streaming to avoid Netlify timeout
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        let fullText = "";
 
-  let feedbackItems;
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [] };
-    feedbackItems = parsed.items || [];
-  } catch {
-    feedbackItems = [
-      {
-        type: "GENERAL",
-        severity: "INFO",
-        content: text,
-        suggestion: "",
-      },
-    ];
-  }
+        const messageStream = client.messages.stream({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1024,
+          system: feedbackSystem(eventData),
+          messages: [
+            {
+              role: "user",
+              content: `Please review this content and provide feedback:\n\n${content}`,
+            },
+          ],
+        });
 
-  // Save feedback items to database
-  for (const item of feedbackItems) {
-    await prisma.aiFeedback.create({
-      data: {
-        projectId,
-        userId: session.user.id,
-        slideId: slideId || null,
-        sectionId: sectionId || null,
-        feedbackType: item.type || "GENERAL",
-        severity: item.severity || "INFO",
-        content: item.content,
-        suggestion: item.suggestion || null,
-      },
-    });
-  }
+        messageStream.on("text", (text) => {
+          fullText += text;
+          controller.enqueue(encoder.encode(" "));
+        });
 
-  return NextResponse.json({ feedback: feedbackItems });
+        await messageStream.finalMessage();
+
+        let feedbackItems;
+        try {
+          const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+          const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { items: [] };
+          feedbackItems = parsed.items || [];
+        } catch {
+          feedbackItems = [
+            {
+              type: "GENERAL",
+              severity: "INFO",
+              content: fullText,
+              suggestion: "",
+            },
+          ];
+        }
+
+        // Save feedback items to database
+        for (const item of feedbackItems) {
+          await prisma.aiFeedback.create({
+            data: {
+              projectId,
+              userId,
+              slideId: slideId || null,
+              sectionId: sectionId || null,
+              feedbackType: item.type || "GENERAL",
+              severity: item.severity || "INFO",
+              content: item.content,
+              suggestion: item.suggestion || null,
+            },
+          });
+        }
+
+        controller.enqueue(encoder.encode(JSON.stringify({ feedback: feedbackItems })));
+        controller.close();
+      } catch (err: any) {
+        controller.enqueue(encoder.encode(JSON.stringify({ error: `API error: ${err.message}` })));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain",
+      "Cache-Control": "no-cache",
+    },
+  });
 }

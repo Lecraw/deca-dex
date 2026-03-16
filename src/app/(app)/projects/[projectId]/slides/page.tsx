@@ -265,7 +265,10 @@ export default function SlidesPage() {
           content: `Slide: ${editTitle}\nContent: ${editContent}`,
         }),
       });
-      return res.json();
+      const text = await res.text();
+      const data = JSON.parse(text.trim());
+      if (data.error) throw new Error(data.error);
+      return data;
     },
   });
 

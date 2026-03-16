@@ -29,7 +29,10 @@ export default function JudgePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId }),
       });
-      return res.json();
+      const text = await res.text();
+      const data = JSON.parse(text.trim());
+      if (data.error) throw new Error(data.error);
+      return data;
     },
   });
 

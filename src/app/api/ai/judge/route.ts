@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { judgeSystem } from "@/lib/ai/prompts";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
 import type { DecaEventData } from "@/types/deca";
-
-export const maxDuration = 25;
+import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -89,58 +87,79 @@ export async function POST(req: NextRequest) {
     sections: JSON.parse(event.sectionsJson),
   };
 
-  let message;
-  try {
-    message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      system: judgeSystem(eventData),
-      messages: [
-        {
-          role: "user",
-          content: `Please score this project:\n\n${projectContent}`,
-        },
-      ],
-    });
-  } catch (err: any) {
-    console.error("Anthropic API error (judge):", err.message);
-    return NextResponse.json(
-      { error: "AI service temporarily unavailable. Please try again." },
-      { status: 502 }
-    );
-  }
+  const userId = session.user.id;
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  // Use streaming to avoid Netlify timeout
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        let fullText = "";
 
-  let result;
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-  } catch {
-    result = null;
-  }
+        const messageStream = client.messages.stream({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2048,
+          system: judgeSystem(eventData),
+          messages: [
+            {
+              role: "user",
+              content: `Please score this project:\n\n${projectContent}`,
+            },
+          ],
+        });
 
-  if (!result) {
-    return NextResponse.json({ error: "Failed to parse judge response" }, { status: 500 });
-  }
+        messageStream.on("text", (text) => {
+          fullText += text;
+          controller.enqueue(encoder.encode(" "));
+        });
 
-  // Save score
-  const score = await prisma.judgeScore.create({
-    data: {
-      projectId,
-      totalScore: result.totalScore,
-      maxScore: result.maxScore,
-      categoriesJson: JSON.stringify(result.categories),
-      overallNotes: result.overallNotes || "",
-      strengths: JSON.stringify(result.strengths || []),
-      improvements: JSON.stringify(result.improvements || []),
+        await messageStream.finalMessage();
+
+        let result;
+        try {
+          const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+          result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        } catch {
+          result = null;
+        }
+
+        if (!result) {
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "Failed to parse judge response" })));
+          controller.close();
+          return;
+        }
+
+        // Save score
+        const score = await prisma.judgeScore.create({
+          data: {
+            projectId,
+            totalScore: result.totalScore,
+            maxScore: result.maxScore,
+            categoriesJson: JSON.stringify(result.categories),
+            overallNotes: result.overallNotes || "",
+            strengths: JSON.stringify(result.strengths || []),
+            improvements: JSON.stringify(result.improvements || []),
+          },
+        });
+
+        // Award XP
+        await awardXp(userId, "RUN_JUDGE_SIM", { projectId, scoreId: score.id });
+        await checkAndAwardBadges(userId);
+
+        controller.enqueue(encoder.encode(JSON.stringify({ score: result, scoreId: score.id })));
+        controller.close();
+      } catch (err: any) {
+        controller.enqueue(encoder.encode(JSON.stringify({ error: `API error: ${err.message}` })));
+        controller.close();
+      }
     },
   });
 
-  // Award XP for running judge simulation
-  await awardXp(session.user.id, "RUN_JUDGE_SIM", { projectId, scoreId: score.id });
-  await checkAndAwardBadges(session.user.id);
-
-  return NextResponse.json({ score: result, scoreId: score.id });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain",
+      "Cache-Control": "no-cache",
+    },
+  });
 }

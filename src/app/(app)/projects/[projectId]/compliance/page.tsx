@@ -45,15 +45,10 @@ export default function CompliancePage() {
           overrides: Array.from(overriddenChecks),
         }),
       });
-      if (!res.ok) {
-        let errMsg = "Failed to run compliance check";
-        try {
-          const err = await res.json();
-          errMsg = err.error || errMsg;
-        } catch {}
-        throw new Error(errMsg);
-      }
-      return res.json();
+      const text = await res.text();
+      const data = JSON.parse(text.trim());
+      if (data.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });

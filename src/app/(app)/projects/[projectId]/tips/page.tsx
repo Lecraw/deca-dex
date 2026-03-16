@@ -77,7 +77,12 @@ export default function TipsPage() {
         }
         throw new Error(errMsg);
       }
-      return res.json();
+      // Response is streamed: spaces as keepalive, then JSON at end
+      const text = await res.text();
+      const trimmed = text.trim();
+      const data = JSON.parse(trimmed);
+      if (data.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: (data) => {
       setTips(data);
