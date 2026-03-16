@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { anthropic } from "@/lib/anthropic";
 
+export const maxDuration = 25;
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -28,85 +30,39 @@ export async function POST(req: NextRequest) {
 
   const event = project.event;
 
-  // Build project content summary
-  let projectContent = `Project Title: ${project.title}\n`;
-  if (project.businessIdea) {
-    projectContent += `Business Idea: ${project.businessIdea}\n`;
-  }
-  if (project.description) {
-    projectContent += `Description: ${project.description}\n`;
-  }
+  // Build compact project summary
+  let projectContent = `Title: ${project.title}`;
+  if (project.businessIdea) projectContent += `\nIdea: ${project.businessIdea}`;
+  if (project.description) projectContent += `\nDesc: ${project.description}`;
 
   if (project.slides.length > 0) {
-    projectContent += "\n=== SLIDES ===\n";
-    for (const slide of project.slides) {
-      projectContent += `Slide ${slide.order + 1}: ${slide.title}\n`;
-      const content =
-        typeof slide.contentJson === "string"
-          ? JSON.parse(slide.contentJson)
-          : slide.contentJson;
-      if (content?.blocks) {
-        for (const block of content.blocks) {
-          if (block.content) projectContent += `  ${block.content}\n`;
-        }
-      }
-    }
+    projectContent += "\nSlides: ";
+    projectContent += project.slides.map((s) => s.title).join(", ");
   }
 
   if (project.sections.length > 0) {
-    projectContent += "\n=== REPORT SECTIONS ===\n";
-    for (const section of project.sections) {
-      projectContent += `Section: ${section.title}\n`;
-      const plainText = section.bodyHtml.replace(/<[^>]*>/g, "");
-      projectContent += `  ${plainText.substring(0, 500)}\n`;
-    }
+    projectContent += "\nSections: ";
+    projectContent += project.sections.map((s) => s.title).join(", ");
   }
 
   if (project.uploadedFileText) {
-    projectContent += `\n=== UPLOADED PRESENTATION ===\n`;
-    projectContent += project.uploadedFileText.substring(0, 2000) + "\n";
+    projectContent += `\nUploaded content: ${project.uploadedFileText.substring(0, 800)}`;
   }
 
   let message;
   try {
     message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 4096,
-      system: `You are an expert DECA presentation coach helping a student prepare for the ${event.name} (${event.code}) event.
+      max_tokens: 3000,
+      system: `You are a DECA presentation coach for the ${event.name} (${event.code}) event. Return ONLY a JSON object (no markdown, no code blocks, no extra text) with exactly this structure:
 
-The student has a project/presentation they need to present to DECA judges. Your job is to provide four types of tips:
+{"generalTips":[{"tip":"text","category":"DELIVERY|STRUCTURE|JUDGES|CONFIDENCE|TIMING"}],"creativeHooks":[{"line":"phrase","context":"when to use"}],"propIdeas":[{"prop":"what","howToUse":"how"}],"graphicIdeas":[{"visual":"description","slide":"which slide","why":"reasoning"}]}
 
-1. GENERAL PRESENTATION TIPS: Practical advice on delivery, body language, structure, time management, and how to impress DECA judges specifically. These should be actionable and specific to DECA competition presenting (not generic public speaking advice). Think about what separates a state-level presenter from an ICDC winner.
-
-2. CREATIVE HOOKS: Clever lines, puns, wordplay, memorable phrases, or attention-grabbing openers that are specifically tied to the student's business idea/project. These should be things they could actually say during their presentation to make it memorable. Think about what would make a judge smile or remember this presentation. Be creative and fun but still professional.
-
-3. PROP IDEAS: Physical props or visual aids the student could bring to their presentation to make it more engaging and memorable. Include HOW to use each prop effectively (when to reveal it, what to say when showing it). Props should be practical, easy to bring, and directly related to the business/project.
-
-4. GRAPHIC & VISUAL IDEAS: Specific graphics, charts, diagrams, images, or visual elements the student should create for their slides. Be very specific — describe the exact type of visual (e.g., "bar chart comparing Year 1 vs Year 2 projected revenue", "customer journey flowchart with 5 stages", "infographic showing market size breakdown by segment"). For each visual, explain which slide it belongs on and why it strengthens the presentation.
-
-Return JSON in this exact format:
-{
-  "generalTips": [
-    { "tip": "The tip text", "category": "DELIVERY|STRUCTURE|JUDGES|CONFIDENCE|TIMING" }
-  ],
-  "creativeHooks": [
-    { "line": "The clever line or phrase", "context": "When/how to use it in the presentation" }
-  ],
-  "propIdeas": [
-    { "prop": "What the prop is", "howToUse": "How to incorporate it into the presentation" }
-  ],
-  "graphicIdeas": [
-    { "visual": "Description of the graphic/visual", "slide": "Which slide it belongs on", "why": "Why it strengthens the presentation" }
-  ]
-}
-
-Generate 5-7 general tips, 5-7 creative hooks, 3-5 prop ideas, and 4-6 graphic ideas.
-
-Return ONLY the JSON object, no markdown, no code blocks, no extra text.`,
+Generate exactly: 5 general tips, 5 creative hooks, 3 prop ideas, 3 graphic ideas. Keep each tip/hook/idea concise (1-2 sentences max). Creative hooks should be clever wordplay tied to the specific business.`,
       messages: [
         {
           role: "user",
-          content: `Generate presentation tips, creative hooks, and prop ideas for this DECA project:\n\n${projectContent}`,
+          content: projectContent,
         },
       ],
     });
@@ -121,7 +77,7 @@ Return ONLY the JSON object, no markdown, no code blocks, no extra text.`,
 
   if (!rawText) {
     return NextResponse.json(
-      { error: `Empty response. Stop: ${message.stop_reason}. Content types: ${message.content.map((c: any) => c.type).join(",")}` },
+      { error: "Empty AI response. Please try again." },
       { status: 500 }
     );
   }
