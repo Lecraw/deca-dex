@@ -74,13 +74,15 @@ export async function POST(req: NextRequest) {
       max_tokens: 2048,
       system: `You are an expert DECA presentation coach helping a student prepare for the ${event.name} (${event.code}) event.
 
-The student has a project/presentation they need to present to DECA judges. Your job is to provide three types of tips:
+The student has a project/presentation they need to present to DECA judges. Your job is to provide four types of tips:
 
 1. GENERAL PRESENTATION TIPS: Practical advice on delivery, body language, structure, time management, and how to impress DECA judges specifically. These should be actionable and specific to DECA competition presenting (not generic public speaking advice). Think about what separates a state-level presenter from an ICDC winner.
 
 2. CREATIVE HOOKS: Clever lines, puns, wordplay, memorable phrases, or attention-grabbing openers that are specifically tied to the student's business idea/project. These should be things they could actually say during their presentation to make it memorable. Think about what would make a judge smile or remember this presentation. Be creative and fun but still professional.
 
 3. PROP IDEAS: Physical props or visual aids the student could bring to their presentation to make it more engaging and memorable. Include HOW to use each prop effectively (when to reveal it, what to say when showing it). Props should be practical, easy to bring, and directly related to the business/project.
+
+4. GRAPHIC & VISUAL IDEAS: Specific graphics, charts, diagrams, images, or visual elements the student should create for their slides. Be very specific — describe the exact type of visual (e.g., "bar chart comparing Year 1 vs Year 2 projected revenue", "customer journey flowchart with 5 stages", "infographic showing market size breakdown by segment"). For each visual, explain which slide it belongs on and why it strengthens the presentation.
 
 Return JSON in this exact format:
 {
@@ -92,10 +94,15 @@ Return JSON in this exact format:
   ],
   "propIdeas": [
     { "prop": "What the prop is", "howToUse": "How to incorporate it into the presentation" }
+  ],
+  "graphicIdeas": [
+    { "visual": "Description of the graphic/visual", "slide": "Which slide it belongs on", "why": "Why it strengthens the presentation" }
   ]
 }
 
-Generate 5-7 general tips, 5-7 creative hooks, and 3-5 prop ideas.`,
+Generate 5-7 general tips, 5-7 creative hooks, 3-5 prop ideas, and 4-6 graphic ideas.
+
+Return ONLY the JSON object, no markdown, no code blocks, no extra text.`,
       messages: [
         {
           role: "user",
@@ -115,10 +122,23 @@ Generate 5-7 general tips, 5-7 creative hooks, and 3-5 prop ideas.`,
 
   let result;
   try {
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+    // Try parsing the whole response first
+    result = JSON.parse(rawText);
   } catch {
-    result = null;
+    try {
+      // Try extracting JSON from markdown code blocks
+      const codeBlockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        result = JSON.parse(codeBlockMatch[1].trim());
+      } else {
+        // Try extracting any JSON object
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      }
+    } catch {
+      console.error("Failed to parse tips JSON. Raw response:", rawText.substring(0, 500));
+      result = null;
+    }
   }
 
   if (!result) {
