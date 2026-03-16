@@ -54,7 +54,10 @@ export default function RoleplayPage() {
           eventCode: selectedEvent,
         }),
       });
-      return res.json();
+      const text = await res.text();
+      const data = JSON.parse(text.trim());
+      if (data.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: (data) => {
       if (data.sessionId) {

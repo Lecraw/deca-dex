@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { ideaGeneratorSystem } from "@/lib/ai/prompts";
 import { awardXp } from "@/lib/gamification/xp";
 import type { DecaEventData } from "@/types/deca";
+import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -43,43 +43,57 @@ export async function POST(req: NextRequest) {
     sections: JSON.parse(event.sectionsJson),
   };
 
-  let message;
-  try {
-    message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      system: ideaGeneratorSystem(eventData),
-      messages: [
-        {
-          role: "user",
-          content:
-            userPrompt ||
-            `Generate ${count} creative and competition-winning business ideas for the ${event.name} DECA event. Make them innovative, feasible for high school students, and aligned with current trends.`,
-        },
-      ],
-    });
-  } catch (err: any) {
-    console.error("Anthropic API error (generate-idea):", err.message);
-    return NextResponse.json(
-      { error: "AI service temporarily unavailable. Please try again." },
-      { status: 502 }
-    );
-  }
+  const userId = session.user.id;
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        let fullText = "";
 
-  // Try to extract JSON from the response
-  let ideas;
-  try {
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    ideas = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-  } catch {
-    ideas = [{ name: "Error", pitch: text, problem: "", targetMarket: "", revenueModel: "", uniqueness: "" }];
-  }
+        const messageStream = client.messages.stream({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2048,
+          system: ideaGeneratorSystem(eventData),
+          messages: [
+            {
+              role: "user",
+              content:
+                userPrompt ||
+                `Generate ${count} creative and competition-winning business ideas for the ${event.name} DECA event. Make them innovative, feasible for high school students, and aligned with current trends.`,
+            },
+          ],
+        });
 
-  // Award XP for generating ideas
-  await awardXp(session.user.id, "GENERATE_IDEAS", { eventId });
+        messageStream.on("text", (text) => {
+          fullText += text;
+          controller.enqueue(encoder.encode(" "));
+        });
 
-  return NextResponse.json({ ideas });
+        await messageStream.finalMessage();
+
+        let ideas;
+        try {
+          const jsonMatch = fullText.match(/\[[\s\S]*\]/);
+          ideas = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        } catch {
+          ideas = [{ name: "Error", pitch: fullText, problem: "", targetMarket: "", revenueModel: "", uniqueness: "" }];
+        }
+
+        await awardXp(userId, "GENERATE_IDEAS", { eventId });
+
+        controller.enqueue(encoder.encode(JSON.stringify({ ideas })));
+        controller.close();
+      } catch (err: any) {
+        console.error("Generate idea error:", err.message);
+        controller.enqueue(encoder.encode(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache" },
+  });
 }

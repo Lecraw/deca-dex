@@ -1,18 +1,17 @@
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
+import Anthropic from "@anthropic-ai/sdk";
 
 // Real DECA scoring structures by event category
 const SCORING_CONFIG = {
   PRINCIPLES_EVENTS: {
     piCount: 4,
-    piMaxPoints: 20, // each PI scored 0-20 (Little/No Value: 0-5, Below: 6-10, Meets: 11-15, Exceeds: 16-20)
+    piMaxPoints: 20,
     overallImpressionMax: 20,
-    // Total: 4×20 + 20 = 100
     twentyFirstCenturySkills: [
       "Reason effectively and use systems thinking",
       "Make judgments and decisions, and solve problems",
@@ -22,9 +21,7 @@ const SCORING_CONFIG = {
   },
   INDIVIDUAL_SERIES: {
     piCount: 5,
-    piMaxPoints: 14, // each PI scored 0-14 (Little/No Value: 0-4, Below: 5-8, Meets: 9-11, Exceeds: 12-14)
-    // 21st century skills: 4 × 6 = 24, Overall Impression: 6
-    // Total: 5×14 + 4×6 + 6 = 70 + 24 + 6 = 100
+    piMaxPoints: 14,
     twentyFirstCenturySkills: [
       "Reason effectively and use systems thinking",
       "Make judgments and decisions, and solve problems",
@@ -36,9 +33,7 @@ const SCORING_CONFIG = {
   },
   TEAM_DECISION_MAKING: {
     piCount: 7,
-    piMaxPoints: 10, // each PI scored 0-10
-    // Supplemental: Clarity 6, Organization 6, Mature Judgment 6, Effective Participation 6, Overall 6
-    // Total: 7×10 + 5×6 = 70 + 30 = 100
+    piMaxPoints: 10,
     twentyFirstCenturySkills: [
       "Clarity of expression",
       "Organization of ideas",
@@ -54,7 +49,6 @@ function getScoringConfig(category: string) {
   if (category in SCORING_CONFIG) {
     return SCORING_CONFIG[category as keyof typeof SCORING_CONFIG];
   }
-  // Default to principles
   return SCORING_CONFIG.PRINCIPLES_EVENTS;
 }
 
@@ -101,8 +95,6 @@ export async function GET(req: NextRequest) {
   );
 }
 
-export const maxDuration = 25;
-
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -121,101 +113,101 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: "eventCode required" }), { status: 400 });
     }
 
-    // Get event details from DB
     const event = await prisma.decaEvent.findUnique({ where: { code: eventCode } });
     if (!event) {
       return new Response(JSON.stringify({ error: "Event not found" }), { status: 404 });
     }
 
     const config = getScoringConfig(event.category);
+    const userId = session.user.id;
 
-    let message;
-    try {
-      message = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2048,
-        system: `You are a DECA competition scenario generator for the ${event.name} (${eventCode}) event.
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          let fullText = "";
+
+          const messageStream = client.messages.stream({
+            model: "claude-sonnet-4-6",
+            max_tokens: 2048,
+            system: `You are a DECA competition scenario generator for the ${event.name} (${eventCode}) event.
 
 This is a ${event.category.replace(/_/g, " ")} event in the ${event.cluster.replace(/_/g, " ")} career cluster.
 
-Generate a realistic DECA roleplay scenario that matches exactly how real DECA competitions work.
+Generate a realistic DECA roleplay scenario. Return ONLY a JSON object (no markdown, no code blocks) with this structure:
 
-The scenario MUST follow this exact format:
-1. A detailed business situation written in 2nd person ("You are to assume the role of...")
-2. Clearly state the participant's role and who the judge is playing (the second party)
-3. Provide a realistic business context with specific details (company names, numbers, situations)
-4. Include 2-3 paragraphs of detailed context
-5. End by explaining the roleplay setup: "You will present to [judge's role] in a role-play to take place in [location]. [Judge's role] will begin by greeting you and asking to hear your [analysis/ideas/solution]."
+{"scenario":"Full scenario text in 2nd person...","performanceIndicators":["PI 1","PI 2"${config.piCount > 2 ? ',...' : ''}],"judgeFollowUpQuestions":["Q1?","Q2?","Q3?"]}
 
-You MUST generate exactly ${config.piCount} Performance Indicators. These should be real DECA-style performance indicators — specific knowledge and skills the student must demonstrate. They should be phrased as action statements (e.g., "Explain the nature of channels of distribution", "Identify factors affecting a business's profit", "Determine factors affecting business risk").
+Requirements:
+- Scenario: 2-3 paragraphs, 2nd person ("You are to assume the role of..."), realistic business context, end with roleplay setup
+- Exactly ${config.piCount} performance indicators as action statements from the ${event.cluster.replace(/_/g, " ")} cluster
+- Exactly 3 follow-up questions`,
+            messages: [
+              {
+                role: "user",
+                content: `Generate a roleplay scenario with ${config.piCount} performance indicators for ${event.name} (${eventCode}).`,
+              },
+            ],
+          });
 
-Performance indicators should come from the ${event.cluster.replace(/_/g, " ")} career cluster and be appropriate for the ${event.name} event.
+          messageStream.on("text", (text) => {
+            fullText += text;
+            controller.enqueue(encoder.encode(" "));
+          });
 
-Also generate exactly 3 follow-up questions the judge should ask after the student's initial presentation. These should probe deeper into the student's understanding and relate to the scenario and PIs.
+          await messageStream.finalMessage();
 
-Return JSON in this exact format:
-{
-  "scenario": "The full scenario text...",
-  "performanceIndicators": [${Array(config.piCount).fill('"PI text"').join(", ")}],
-  "judgeFollowUpQuestions": ["Question 1?", "Question 2?", "Question 3?"]
-}`,
-        messages: [
-          {
-            role: "user",
-            content: `Generate a roleplay scenario with ${config.piCount} performance indicators for the ${event.name} (${eventCode}) DECA event.`,
-          },
-        ],
-      });
-    } catch (err: any) {
-      console.error("Anthropic API error (roleplay start):", err.message);
-      return new Response(
-        JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
-      );
-    }
+          let scenarioData;
+          try {
+            scenarioData = JSON.parse(fullText);
+          } catch {
+            try {
+              const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+              scenarioData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+            } catch {
+              scenarioData = null;
+            }
+          }
 
-    const rawText = message.content[0].type === "text" ? message.content[0].text : "";
+          if (!scenarioData?.scenario || !scenarioData?.performanceIndicators) {
+            controller.enqueue(encoder.encode(JSON.stringify({ error: "Failed to generate scenario. Please try again." })));
+            controller.close();
+            return;
+          }
 
-    let scenarioData;
-    try {
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      scenarioData = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-    } catch {
-      scenarioData = null;
-    }
+          const twentyFirstCenturySkills = config.twentyFirstCenturySkills;
 
-    if (!scenarioData?.scenario || !scenarioData?.performanceIndicators) {
-      return new Response(
-        JSON.stringify({ error: "Failed to generate scenario. Please try again." }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
+          const roleplaySession = await prisma.roleplaySession.create({
+            data: {
+              userId,
+              eventCode,
+              scenarioJson: JSON.stringify({
+                scenario: scenarioData.scenario,
+                performanceIndicators: scenarioData.performanceIndicators,
+                judgeFollowUpQuestions: scenarioData.judgeFollowUpQuestions || [],
+                twentyFirstCenturySkills,
+                eventName: event.name,
+                eventCategory: event.category,
+              }),
+              messagesJson: JSON.stringify([]),
+              completed: false,
+            },
+          });
 
-    // Add 21st century skills and event metadata
-    const twentyFirstCenturySkills = config.twentyFirstCenturySkills;
-
-    // Save to database
-    const roleplaySession = await prisma.roleplaySession.create({
-      data: {
-        userId: session.user.id,
-        eventCode,
-        scenarioJson: JSON.stringify({
-          scenario: scenarioData.scenario,
-          performanceIndicators: scenarioData.performanceIndicators,
-          judgeFollowUpQuestions: scenarioData.judgeFollowUpQuestions || [],
-          twentyFirstCenturySkills,
-          eventName: event.name,
-          eventCategory: event.category,
-        }),
-        messagesJson: JSON.stringify([]),
-        completed: false,
+          controller.enqueue(encoder.encode(JSON.stringify({ sessionId: roleplaySession.id })));
+          controller.close();
+        } catch (err: any) {
+          console.error("Roleplay start error:", err.message);
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })));
+          controller.close();
+        }
       },
     });
 
-    return new Response(
-      JSON.stringify({ sessionId: roleplaySession.id }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache" },
+    });
   }
 
   // =============================================
@@ -240,182 +232,113 @@ Return JSON in this exact format:
     const config = getScoringConfig(eventCategory);
     const pis = scenarioData.performanceIndicators || [];
 
-    // Build scoring instructions based on event type
     let scoringInstructions = "";
 
     if (eventCategory === "PRINCIPLES_EVENTS") {
       scoringInstructions = `
-Score each Performance Indicator on a 0-20 scale:
-- Exceeds Expectations (16-20): Extremely professional, greatly exceeds business standards, top 10%
-- Meets Expectations (11-15): Acceptable and effective, meets minimal business standards, 70-89th percentile
-- Below Expectations (6-10): Limited effectiveness, below minimal business standards, 50-69th percentile
-- Little/No Value (0-5): Little or no effectiveness, needs significant training, 0-49th percentile
-
-Also score "Overall Impression & Response to Questions" on 0-20.
-
-Total should be out of 100 (4 PIs × 20 + Overall Impression 20).
+Score each PI on 0-20 (Exceeds 16-20, Meets 11-15, Below 6-10, Little/No 0-5).
+Score "Overall Impression" on 0-20. Total out of 100.
 
 Return JSON:
-{
-  "totalScore": <number 0-100>,
-  "overallFeedback": "2-3 sentence overall assessment",
-  "piScores": [
-    { "indicator": "PI text", "score": <0-20>, "maxPoints": 20, "feedback": "specific feedback", "level": "Exceeds/Meets/Below/Little-No Value" }
-  ],
-  "twentyFirstCenturyScores": [
-    { "skill": "Overall Impression & Responses to Questions", "score": <0-20>, "maxPoints": 20 }
-  ],
-  "strengths": ["strength1", "strength2", "strength3"],
-  "improvements": ["improvement1", "improvement2", "improvement3"]
-}`;
+{"totalScore":<0-100>,"overallFeedback":"2-3 sentences","piScores":[{"indicator":"text","score":<0-20>,"maxPoints":20,"feedback":"text","level":"Exceeds/Meets/Below/Little-No Value"}],"twentyFirstCenturyScores":[{"skill":"Overall Impression & Responses to Questions","score":<0-20>,"maxPoints":20}],"strengths":["s1","s2","s3"],"improvements":["i1","i2","i3"]}`;
     } else if (eventCategory === "INDIVIDUAL_SERIES") {
       scoringInstructions = `
-Score each Performance Indicator on a 0-14 scale:
-- Exceeds Expectations (12-14): Extremely professional, greatly exceeds business standards
-- Meets Expectations (9-11): Acceptable and effective, meets minimal business standards
-- Below Expectations (5-8): Limited effectiveness, below minimal business standards
-- Little/No Value (0-4): Little or no effectiveness
-
-Score each 21st Century Skill on a 0-6 scale:
-- Exceeds (5-6), Meets (4), Below (2-3), Little/No Value (0-1)
-
-Also score "Overall Impression & Response to Questions" on 0-6.
-
-Total should be out of 100 (5 PIs × 14 = 70, 4 skills × 6 = 24, overall 6).
+Score each PI on 0-14 (Exceeds 12-14, Meets 9-11, Below 5-8, Little/No 0-4).
+Score 21st Century Skills on 0-6 each. Overall Impression on 0-6. Total out of 100.
 
 Return JSON:
-{
-  "totalScore": <number 0-100>,
-  "overallFeedback": "2-3 sentence overall assessment",
-  "piScores": [
-    { "indicator": "PI text", "score": <0-14>, "maxPoints": 14, "feedback": "specific feedback", "level": "Exceeds/Meets/Below/Little-No Value" }
-  ],
-  "twentyFirstCenturyScores": [
-    { "skill": "Reason effectively and use systems thinking", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Make judgments and decisions, and solve problems", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Communicate clearly", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Show evidence of creativity", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Overall Impression & Responses to Questions", "score": <0-6>, "maxPoints": 6 }
-  ],
-  "strengths": ["strength1", "strength2", "strength3"],
-  "improvements": ["improvement1", "improvement2", "improvement3"]
-}`;
+{"totalScore":<0-100>,"overallFeedback":"2-3 sentences","piScores":[{"indicator":"text","score":<0-14>,"maxPoints":14,"feedback":"text","level":"Exceeds/Meets/Below/Little-No Value"}],"twentyFirstCenturyScores":[{"skill":"Reason effectively","score":<0-6>,"maxPoints":6},{"skill":"Make judgments","score":<0-6>,"maxPoints":6},{"skill":"Communicate clearly","score":<0-6>,"maxPoints":6},{"skill":"Show creativity","score":<0-6>,"maxPoints":6},{"skill":"Overall Impression","score":<0-6>,"maxPoints":6}],"strengths":["s1","s2","s3"],"improvements":["i1","i2","i3"]}`;
     } else {
-      // Team Decision Making
       scoringInstructions = `
-Score each Performance Indicator on a 0-10 scale:
-- Exceeds Expectations (9-10): Extremely professional
-- Meets Expectations (7-8): Acceptable and effective
-- Below Expectations (4-6): Limited effectiveness
-- Little/No Value (0-3): Little or no effectiveness
-
-Score supplemental categories on a 0-6 scale:
-- Clarity of expression
-- Organization of ideas
-- Evidence of mature judgment
-- Effective participation of both team members (score based on individual)
-- Overall impression & responses to questions
-
-Total should be out of 100 (7 PIs × 10 = 70, 5 categories × 6 = 30).
+Score each PI on 0-10 (Exceeds 9-10, Meets 7-8, Below 4-6, Little/No 0-3).
+Score supplemental categories on 0-6 each. Total out of 100.
 
 Return JSON:
-{
-  "totalScore": <number 0-100>,
-  "overallFeedback": "2-3 sentence overall assessment",
-  "piScores": [
-    { "indicator": "PI text", "score": <0-10>, "maxPoints": 10, "feedback": "specific feedback", "level": "Exceeds/Meets/Below/Little-No Value" }
-  ],
-  "twentyFirstCenturyScores": [
-    { "skill": "Clarity of expression", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Organization of ideas", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Evidence of mature judgment", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Effective participation", "score": <0-6>, "maxPoints": 6 },
-    { "skill": "Overall Impression & Responses to Questions", "score": <0-6>, "maxPoints": 6 }
-  ],
-  "strengths": ["strength1", "strength2", "strength3"],
-  "improvements": ["improvement1", "improvement2", "improvement3"]
-}`;
+{"totalScore":<0-100>,"overallFeedback":"2-3 sentences","piScores":[{"indicator":"text","score":<0-10>,"maxPoints":10,"feedback":"text","level":"Exceeds/Meets/Below/Little-No Value"}],"twentyFirstCenturyScores":[{"skill":"Clarity of expression","score":<0-6>,"maxPoints":6},{"skill":"Organization of ideas","score":<0-6>,"maxPoints":6},{"skill":"Evidence of mature judgment","score":<0-6>,"maxPoints":6},{"skill":"Effective participation","score":<0-6>,"maxPoints":6},{"skill":"Overall Impression","score":<0-6>,"maxPoints":6}],"strengths":["s1","s2","s3"],"improvements":["i1","i2","i3"]}`;
     }
 
-    const piList = pis.map((p: string, i: number) => `  PI ${i + 1}: ${p}`).join("\n");
+    const piList = pis.map((p: string, i: number) => `PI ${i + 1}: ${p}`).join("; ");
+    const userId = session.user.id;
 
-    let message;
-    try {
-      message = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 3000,
-        system: `You are an experienced DECA judge at ICDC level, evaluating a student's roleplay performance for the ${scenarioData.eventName} (${roleplaySession.eventCode}) event.
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          let fullText = "";
 
-This is a ${eventCategory.replace(/_/g, " ")} event.
+          const messageStream = client.messages.stream({
+            model: "claude-sonnet-4-6",
+            max_tokens: 2500,
+            system: `You are a DECA judge evaluating a student's roleplay for ${scenarioData.eventName} (${roleplaySession.eventCode}), a ${eventCategory.replace(/_/g, " ")} event.
 
-The student was given this scenario:
-${scenarioData.scenario}
+Scenario: ${scenarioData.scenario.substring(0, 500)}...
 
-Performance Indicators they needed to address:
-${piList}
+PIs to address: ${piList}
 
-The student spoke their response aloud (transcribed via speech-to-text). Evaluate them exactly as a real DECA judge would, using the official DECA evaluation form scoring.
-
-Important: The transcript may have minor speech-to-text errors — focus on the substance and ideas, not transcription artifacts. However, DO evaluate their communication clarity, professionalism, and organization as you would judge someone speaking in person.
-
-Consider:
-- Did they address each performance indicator? Did they define it AND apply it to the scenario?
-- Were they professional and confident in their delivery?
-- Did they demonstrate critical thinking and problem-solving?
-- Were their answers to follow-up questions thorough?
-- Did they show creativity and go above and beyond?
+The transcript is from speech-to-text — focus on substance, not transcription errors. Evaluate communication, professionalism, and organization. Be encouraging but honest. Return ONLY a JSON object (no markdown, no code blocks).
 
 ${scoringInstructions}`,
-        messages: [
-          {
-            role: "user",
-            content: `Here is the full transcript of the student's roleplay session:\n\n${fullTranscript}`,
-          },
-        ],
-      });
-    } catch (err: any) {
-      console.error("Anthropic API error (roleplay score):", err.message);
-      return new Response(
-        JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
-      );
-    }
+            messages: [
+              {
+                role: "user",
+                content: `Student's roleplay transcript:\n\n${fullTranscript}`,
+              },
+            ],
+          });
 
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
+          messageStream.on("text", (text) => {
+            fullText += text;
+            controller.enqueue(encoder.encode(" "));
+          });
 
-    let result;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-    } catch {
-      result = null;
-    }
+          await messageStream.finalMessage();
 
-    if (!result) {
-      return new Response(
-        JSON.stringify({ error: "Failed to parse evaluation" }),
-        { status: 500 }
-      );
-    }
+          let result;
+          try {
+            result = JSON.parse(fullText);
+          } catch {
+            try {
+              const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+              result = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+            } catch {
+              result = null;
+            }
+          }
 
-    // Update session in DB
-    await prisma.roleplaySession.update({
-      where: { id: sessionId },
-      data: {
-        messagesJson: JSON.stringify(
-          body.fullTranscript ? [{ role: "user", content: body.fullTranscript, timestamp: new Date().toISOString() }] : []
-        ),
-        scoreJson: JSON.stringify(result),
-        completed: true,
+          if (!result) {
+            controller.enqueue(encoder.encode(JSON.stringify({ error: "Failed to parse evaluation. Please try again." })));
+            controller.close();
+            return;
+          }
+
+          // Update session in DB
+          await prisma.roleplaySession.update({
+            where: { id: sessionId },
+            data: {
+              messagesJson: JSON.stringify(
+                fullTranscript ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }] : []
+              ),
+              scoreJson: JSON.stringify(result),
+              completed: true,
+            },
+          });
+
+          await awardXp(userId, "COMPLETE_ROLEPLAY", { eventCode: roleplaySession.eventCode });
+          await checkAndAwardBadges(userId);
+
+          controller.enqueue(encoder.encode(JSON.stringify(result)));
+          controller.close();
+        } catch (err: any) {
+          console.error("Roleplay score error:", err.message);
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })));
+          controller.close();
+        }
       },
     });
 
-    // Award XP
-    await awardXp(session.user.id, "COMPLETE_ROLEPLAY", { eventCode: roleplaySession.eventCode });
-    await checkAndAwardBadges(session.user.id);
-
-    return new Response(JSON.stringify(result), {
-      headers: { "Content-Type": "application/json" },
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache" },
     });
   }
 

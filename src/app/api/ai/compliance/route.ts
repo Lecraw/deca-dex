@@ -130,7 +130,7 @@ SCORING GUIDE:
 - A project missing multiple required sections: 45-65
 - Only score below 45 if the project is fundamentally incomplete
 
-Be generous with the score — the goal is to motivate students, not discourage them. Frame the summary positively.`;
+Be generous with the score — the goal is to motivate students, not discourage them. Frame the summary positively.${overrides.length > 0 ? `\n\nIMPORTANT: The student has overridden the following checks (they believe these are not applicable or they've handled them outside this project). Still include these checks in your response, but mark them as PASSED:\n${overrides.join("\n")}` : ""}`;
 
   const userId = session.user.id;
 
