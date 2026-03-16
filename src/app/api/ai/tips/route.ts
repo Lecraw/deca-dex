@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         let fullText = "";
 
         const messageStream = client.messages.stream({
-          model: "claude-sonnet-4-6",
+          model: "claude-3-haiku-20240307",
           max_tokens: 3000,
           system: `You are a DECA presentation coach for the ${event.name} (${event.code}) event. Return ONLY a JSON object (no markdown, no code blocks, no extra text) with exactly this structure:
 

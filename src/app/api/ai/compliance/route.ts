@@ -143,7 +143,7 @@ Be generous with the score — the goal is to motivate students, not discourage 
         let fullText = "";
 
         const messageStream = client.messages.stream({
-          model: "claude-sonnet-4-6",
+          model: "claude-3-haiku-20240307",
           max_tokens: 2048,
           system: systemPrompt,
           messages: [

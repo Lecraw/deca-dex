@@ -238,7 +238,10 @@ export default function RoleplaySessionPage() {
         }),
       });
       const text = await res.text();
-      const data = JSON.parse(text.trim());
+      const jsonStr = text.replace(/^\s+/, "").trim();
+      const jsonStart = jsonStr.indexOf("{");
+      if (jsonStart === -1) throw new Error("Failed to get score. Please try again.");
+      const data = JSON.parse(jsonStr.substring(jsonStart));
       if (data.error) throw new Error(data.error);
       return data;
     },

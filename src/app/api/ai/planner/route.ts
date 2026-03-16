@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         let fullText = "";
 
         const messageStream = client.messages.stream({
-          model: "claude-sonnet-4-6",
+          model: "claude-3-haiku-20240307",
           max_tokens: 2048,
           system: plannerSystem(
             projects[0]?.event?.name || "DECA Event",

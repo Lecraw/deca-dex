@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
           let fullText = "";
 
           const messageStream = client.messages.stream({
-            model: "claude-sonnet-4-6",
+            model: "claude-3-haiku-20240307",
             max_tokens: 2048,
             system: `You are a DECA competition scenario generator for the ${event.name} (${eventCode}) event.
 
@@ -206,7 +206,7 @@ Requirements:
     });
 
     return new Response(stream, {
-      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache" },
+      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
     });
   }
 
@@ -268,7 +268,7 @@ Return JSON:
           let fullText = "";
 
           const messageStream = client.messages.stream({
-            model: "claude-sonnet-4-6",
+            model: "claude-3-haiku-20240307",
             max_tokens: 2500,
             system: `You are a DECA judge evaluating a student's roleplay for ${scenarioData.eventName} (${roleplaySession.eventCode}), a ${eventCategory.replace(/_/g, " ")} event.
 
@@ -338,7 +338,7 @@ ${scoringInstructions}`,
     });
 
     return new Response(stream, {
-      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache" },
+      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
     });
   }
 
