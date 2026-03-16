@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -13,7 +13,7 @@ export default function CompliancePage() {
   const params = useParams();
   const queryClient = useQueryClient();
   const projectId = params.projectId as string;
-  const [overriddenChecks, setOverriddenChecks] = useState<Set<number>>(new Set());
+  const [overriddenChecks, setOverriddenChecks] = useState<Set<string>>(new Set());
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
@@ -23,31 +23,65 @@ export default function CompliancePage() {
     },
   });
 
+  // Load saved overrides from project data
+  useEffect(() => {
+    if (project?.complianceJson) {
+      const data = typeof project.complianceJson === "string"
+        ? JSON.parse(project.complianceJson)
+        : project.complianceJson;
+      if (data.overrides && Array.isArray(data.overrides)) {
+        setOverriddenChecks(new Set(data.overrides));
+      }
+    }
+  }, [project?.complianceJson]);
+
   const runCheck = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/ai/compliance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId }),
+        body: JSON.stringify({
+          projectId,
+          overrides: Array.from(overriddenChecks),
+        }),
       });
+      if (!res.ok) {
+        let errMsg = "Failed to run compliance check";
+        try {
+          const err = await res.json();
+          errMsg = err.error || errMsg;
+        } catch {}
+        throw new Error(errMsg);
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
-      setOverriddenChecks(new Set());
     },
   });
 
-  const compliance = runCheck.data || (project?.complianceJson as any);
+  const saveOverrides = async (newOverrides: Set<string>) => {
+    // Save overrides to the database
+    await fetch(`/api/projects/${projectId}/overrides`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ overrides: Array.from(newOverrides) }),
+    });
+  };
 
-  const handleOverride = (index: number) => {
+  const compliance = runCheck.data || (project?.complianceJson
+    ? (typeof project.complianceJson === "string" ? JSON.parse(project.complianceJson) : project.complianceJson)
+    : null);
+
+  const handleOverride = (checkName: string) => {
     setOverriddenChecks((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
+      if (next.has(checkName)) {
+        next.delete(checkName);
       } else {
-        next.add(index);
+        next.add(checkName);
       }
+      saveOverrides(next);
       return next;
     });
   };
@@ -81,6 +115,12 @@ export default function CompliancePage() {
         )}
       </Button>
 
+      {runCheck.isError && (
+        <p className="text-sm text-red-500 text-center">
+          {(runCheck.error as Error).message}
+        </p>
+      )}
+
       {compliance && (
         <>
           <Card>
@@ -98,13 +138,13 @@ export default function CompliancePage() {
 
           {overriddenChecks.size > 0 && (
             <p className="text-xs text-muted-foreground text-center">
-              {overriddenChecks.size} check{overriddenChecks.size > 1 ? "s" : ""} overridden
+              {overriddenChecks.size} check{overriddenChecks.size > 1 ? "s" : ""} overridden — these will stay overridden on the next check
             </p>
           )}
 
           <div className="space-y-2">
             {[...(compliance.checks || [])].sort((a: any, b: any) => Number(a.passed) - Number(b.passed)).map((check: any, i: number) => {
-              const isOverridden = overriddenChecks.has(i);
+              const isOverridden = overriddenChecks.has(check.name);
               return (
                 <Card key={i} className={isOverridden ? "opacity-50" : check.passed ? "" : "border-yellow-200"}>
                   <CardContent className="p-4 flex items-start gap-3">
@@ -130,7 +170,7 @@ export default function CompliancePage() {
                         variant="ghost"
                         size="sm"
                         className="shrink-0 text-xs"
-                        onClick={() => handleOverride(i)}
+                        onClick={() => handleOverride(check.name)}
                       >
                         {isOverridden ? "Undo" : "Override"}
                       </Button>

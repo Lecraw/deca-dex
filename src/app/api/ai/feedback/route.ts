@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { feedbackSystem } from "@/lib/ai/prompts";
 import type { DecaEventData } from "@/types/deca";
 
+export const maxDuration = 25;
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

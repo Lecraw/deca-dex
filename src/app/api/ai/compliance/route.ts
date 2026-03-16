@@ -6,6 +6,8 @@ import { anthropic } from "@/lib/anthropic";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
 
+export const maxDuration = 25;
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -13,7 +15,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { projectId } = body;
+  const { projectId, overrides = [] } = body;
 
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: session.user.id },
@@ -179,7 +181,7 @@ IMPORTANT: Do NOT penalize heavily for minor style or wording suggestions. The s
   await prisma.project.update({
     where: { id: projectId },
     data: {
-      complianceJson: JSON.stringify({ score, checks, summary: result.summary }),
+      complianceJson: JSON.stringify({ score, checks, summary: result.summary, overrides }),
       readinessScore: score,
     },
   });
@@ -188,5 +190,5 @@ IMPORTANT: Do NOT penalize heavily for minor style or wording suggestions. The s
   await awardXp(session.user.id, "RUN_COMPLIANCE", { projectId });
   await checkAndAwardBadges(session.user.id);
 
-  return NextResponse.json({ score, maxScore: 100, checks, summary: result.summary });
+  return NextResponse.json({ score, maxScore: 100, checks, summary: result.summary, overrides });
 }
