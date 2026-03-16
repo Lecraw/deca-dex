@@ -57,8 +57,8 @@ export default function LandingPage() {
       <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo-white.png" alt="Deca-Dex" width={40} height={40} className="w-10 h-10" />
-            <span className="font-bold text-lg">Deca-Dex</span>
+            <Image src="/logo-white.png" alt="Draftor" width={40} height={40} className="w-10 h-10" />
+            <span className="font-bold text-lg">Draftor</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild>
@@ -85,7 +85,7 @@ export default function LandingPage() {
               <span className="text-primary">with AI</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mt-6">
-              From idea to competition-ready pitch deck in one platform. Deca-Dex
+              From idea to competition-ready pitch deck in one platform. Draftor
               guides you step-by-step through every DECA event with AI mentoring,
               judge simulation, and automatic compliance checking.
             </p>
@@ -177,7 +177,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-border/50 py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          Deca-Dex is not affiliated with DECA Inc.
+          Draftor is not affiliated with DECA Inc.
         </div>
       </footer>
     </div>

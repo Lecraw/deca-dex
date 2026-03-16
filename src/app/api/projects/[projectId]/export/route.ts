@@ -44,7 +44,7 @@ async function exportPptx(project: any) {
   const pptx = new PptxGenJS();
   pptx.title = project.title;
   pptx.subject = project.event?.name || "DECA Project";
-  pptx.author = "Deca-Dex";
+  pptx.author = "Draftor";
 
   // Title slide
   const titleSlide = pptx.addSlide();

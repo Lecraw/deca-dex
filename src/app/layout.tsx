@@ -22,7 +22,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deca-Dex — AI-Powered DECA Competition Assistant",
+  title: "Draftor — AI-Powered DECA Competition Assistant",
   description:
     "Build winning DECA competition projects with AI. From idea to pitch deck in one platform.",
 };

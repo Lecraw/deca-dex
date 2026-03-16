@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   try {
     message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: `You are an expert DECA presentation coach helping a student prepare for the ${event.name} (${event.code}) event.
 
 The student has a project/presentation they need to present to DECA judges. Your job is to provide four types of tips:
@@ -142,8 +142,9 @@ Return ONLY the JSON object, no markdown, no code blocks, no extra text.`,
   }
 
   if (!result) {
+    console.error("Tips: empty result. Stop reason:", message.stop_reason, "Raw:", rawText.substring(0, 200));
     return NextResponse.json(
-      { error: "Failed to generate tips. Please try again." },
+      { error: message.stop_reason === "max_tokens" ? "Response was too long. Please try again." : "Failed to generate tips. Please try again." },
       { status: 500 }
     );
   }

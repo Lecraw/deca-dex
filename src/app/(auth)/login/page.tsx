@@ -109,8 +109,8 @@ function LoginContent() {
         </div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <Image src="/logo-white.png" alt="Deca-Dex" width={40} height={40} className="w-10 h-10" />
-            <span className="font-bold text-xl tracking-tight">Deca-Dex</span>
+            <Image src="/logo-white.png" alt="Draftor" width={40} height={40} className="w-10 h-10" />
+            <span className="font-bold text-xl tracking-tight">Draftor</span>
           </div>
 
           <div className="space-y-6 max-w-md">
@@ -148,8 +148,8 @@ function LoginContent() {
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-            <Image src="/logo-white.png" alt="Deca-Dex" width={40} height={40} className="w-10 h-10" />
-            <span className="font-bold text-xl">Deca-Dex</span>
+            <Image src="/logo-white.png" alt="Draftor" width={40} height={40} className="w-10 h-10" />
+            <span className="font-bold text-xl">Draftor</span>
           </div>
 
           <div className="space-y-2 text-center">
@@ -159,7 +159,7 @@ function LoginContent() {
             <p className="text-sm text-muted-foreground">
               {isRegister
                 ? "Start building your DECA project today"
-                : "Sign in to continue to Deca-Dex"}
+                : "Sign in to continue to Draftor"}
             </p>
           </div>
 

@@ -27,7 +27,7 @@ export default function LeaderboardPage() {
       <div>
         <h1 className="text-2xl font-bold">Leaderboard</h1>
         <p className="text-muted-foreground">
-          Top Deca-Dex users by XP earned
+          Top Draftor users by XP earned
         </p>
       </div>
 

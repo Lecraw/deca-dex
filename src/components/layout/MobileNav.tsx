@@ -30,8 +30,8 @@ export function MobileNav() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b">
-        <Image src="/logo-white.png" alt="Deca-Dex" width={36} height={36} className="w-9 h-9" />
-        <span className="font-bold text-lg">Deca-Dex</span>
+        <Image src="/logo-white.png" alt="Draftor" width={36} height={36} className="w-9 h-9" />
+        <span className="font-bold text-lg">Draftor</span>
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">
