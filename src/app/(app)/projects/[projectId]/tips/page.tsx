@@ -68,8 +68,14 @@ export default function TipsPage() {
         body: JSON.stringify({ projectId }),
       });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to generate tips");
+        let errMsg = "Failed to generate tips";
+        try {
+          const err = await res.json();
+          errMsg = err.error || errMsg;
+        } catch {
+          // Response wasn't JSON (e.g. HTML error page)
+        }
+        throw new Error(errMsg);
       }
       return res.json();
     },
