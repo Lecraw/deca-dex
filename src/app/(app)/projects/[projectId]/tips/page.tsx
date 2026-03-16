@@ -71,7 +71,7 @@ export default function TipsPage() {
         let errMsg = "Failed to generate tips";
         try {
           const err = await res.json();
-          errMsg = err.error || errMsg;
+          errMsg = err.debug_raw ? `${err.error} [stop: ${err.debug_stop_reason}] ${err.debug_raw}` : (err.error || errMsg);
         } catch {
           // Response wasn't JSON (e.g. HTML error page)
         }

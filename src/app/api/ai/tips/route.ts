@@ -142,9 +142,12 @@ Return ONLY the JSON object, no markdown, no code blocks, no extra text.`,
   }
 
   if (!result) {
-    console.error("Tips: empty result. Stop reason:", message.stop_reason, "Raw:", rawText.substring(0, 200));
     return NextResponse.json(
-      { error: message.stop_reason === "max_tokens" ? "Response was too long. Please try again." : "Failed to generate tips. Please try again." },
+      {
+        error: message.stop_reason === "max_tokens" ? "Response was too long. Please try again." : "Failed to generate tips. Please try again.",
+        debug_stop_reason: message.stop_reason,
+        debug_raw: rawText.substring(0, 300),
+      },
       { status: 500 }
     );
   }
