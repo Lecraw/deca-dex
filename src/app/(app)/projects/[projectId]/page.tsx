@@ -18,6 +18,7 @@ import {
   BarChart3,
   Download,
   Sparkles,
+  Lightbulb,
   Loader2,
   AlertTriangle,
   Upload,
@@ -199,7 +200,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <Link href={`/projects/${projectId}/presentation`}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="p-4 flex flex-col items-center text-center gap-2">
@@ -235,6 +236,14 @@ export default function ProjectDetailPage() {
             <CardContent className="p-4 flex flex-col items-center text-center gap-2">
               <MessageSquare className="h-6 w-6 text-orange-500" />
               <span className="text-xs font-medium">AI Feedback</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href={`/projects/${projectId}/tips`}>
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+              <Lightbulb className="h-6 w-6 text-amber-500" />
+              <span className="text-xs font-medium">Tips</span>
             </CardContent>
           </Card>
         </Link>
