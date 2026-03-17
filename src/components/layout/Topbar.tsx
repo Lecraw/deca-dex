@@ -38,10 +38,10 @@ export function Topbar() {
   const xpProgress = Math.min((xp / xpForNextLevel) * 100, 100);
 
   return (
-    <header className="flex items-center justify-between h-14 px-4 border-b border-white/[0.08] dark:border-white/[0.08] backdrop-blur-xl bg-white/50 dark:bg-white/[0.03]">
+    <header className="flex items-center justify-between h-14 px-4 border-b bg-card">
       <div className="flex items-center gap-2 md:hidden">
         <Sheet>
-          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-white/30 dark:hover:bg-white/[0.06]">
+          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground">
             <Menu className="h-5 w-5" />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
@@ -81,7 +81,7 @@ export function Topbar() {
         {/* User Menu */}
         {session?.user ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-white/30 dark:hover:bg-white/[0.06]">
+            <DropdownMenuTrigger className="relative h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-accent">
               <Avatar className="h-8 w-8">
                 <AvatarImage
                   src={session.user.image || ""}

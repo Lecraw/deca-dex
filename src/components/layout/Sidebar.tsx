@@ -34,11 +34,11 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r border-white/[0.08] dark:border-white/[0.08] backdrop-blur-xl bg-white/50 dark:bg-white/[0.03] transition-all duration-300 relative z-10",
+        "hidden md:flex flex-col border-r bg-card transition-all duration-300 relative z-10",
         collapsed ? "w-16" : "w-64"
       )}
     >
-      <div className={cn("flex items-center border-b border-white/[0.08] dark:border-white/[0.08]", collapsed ? "justify-center p-3" : "gap-2 p-4")}>
+      <div className={cn("flex items-center border-b", collapsed ? "justify-center p-3" : "gap-2 p-4")}>
         {!collapsed && (
           <>
             <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0 dark:block hidden" />
@@ -72,8 +72,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-blue-600 dark:bg-blue-600/90 text-white shadow-md shadow-blue-600/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/40 dark:hover:bg-white/[0.06]"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />

@@ -98,61 +98,57 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
+    <div className="min-h-screen flex">
       {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[oklch(0.10_0.02_255)]">
-        {/* Gradient orbs */}
-        <div className="absolute -top-[200px] -left-[100px] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.45_0.22_260/0.20)_0%,transparent_70%)] animate-float-slow" />
-        <div className="absolute -bottom-[150px] -right-[100px] w-[450px] h-[450px] rounded-full bg-[radial-gradient(circle,oklch(0.45_0.20_240/0.15)_0%,transparent_70%)] animate-float-slower" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[radial-gradient(circle,oklch(0.50_0.18_270/0.10)_0%,transparent_60%)] animate-pulse-glow" />
+      <div className="hidden lg:flex lg:w-1/2 bg-[oklch(0.06_0.01_260)] relative overflow-hidden">
+        {/* Subtle glow */}
+        <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] bg-[radial-gradient(circle,oklch(0.30_0.12_265/0.15)_0%,transparent_70%)] pointer-events-none" />
 
         {/* Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.03]" />
+          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.02]" />
         </div>
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10" />
-            <span className="font-bold text-xl tracking-tight">Nexari</span>
+            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8" />
+            <span className="font-bold text-lg tracking-tight">Nexari</span>
           </div>
 
-          <div className="space-y-6 max-w-md">
-            <h1 className="text-4xl font-bold leading-tight">
+          <div className="space-y-8 max-w-md">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/30">Futuristic DECA Preparation</p>
+            <h1 className="text-4xl font-bold leading-tight tracking-tight">
               Build Winning DECA Projects{" "}
-              <span className="text-blue-400">with AI</span>
+              <span className="text-primary">with AI</span>
             </h1>
-            <p className="text-blue-100/50 text-lg leading-relaxed">
+            <p className="text-white/40 text-base leading-relaxed">
               From idea generation to judge-ready pitch decks. AI mentoring,
               compliance checking, and roleplay practice — all in one platform.
             </p>
-            <div className="flex flex-col gap-3 text-sm text-blue-200/40">
+            <div className="flex flex-col gap-3 text-sm text-white/25">
               {[
                 "AI-powered idea generation for every DECA event",
                 "Automatic rubric scoring & compliance checks",
                 "Roleplay practice with an AI judge",
                 "Export to PowerPoint, Word & PDF",
               ].map((item) => (
-                <div key={item} className="flex items-center gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                <div key={item} className="flex items-center gap-3">
+                  <div className="w-px h-3 bg-primary/50" />
                   {item}
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="text-xs text-blue-200/20">
+          <p className="text-[11px] text-white/15 uppercase tracking-wider">
             Not affiliated with DECA Inc.
           </p>
         </div>
       </div>
 
       {/* Right panel — auth form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-background relative">
-        {/* Subtle orb */}
-        <div className="absolute -top-[200px] -right-[200px] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.50_0.22_260/0.05)_0%,transparent_70%)] pointer-events-none" />
-
-        <div className="w-full max-w-sm space-y-8 relative z-10">
+      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
             <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden" />
@@ -177,7 +173,7 @@ function LoginContent() {
                 {availableProviders.google && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 gap-2 dark:glass glass-light border-0"
+                    className="w-full h-11 gap-2"
                     onClick={() => handleOAuth("google")}
                     disabled={oauthLoading !== null}
                   >
@@ -198,7 +194,7 @@ function LoginContent() {
                 {availableProviders.github && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 gap-2 dark:glass glass-light border-0"
+                    className="w-full h-11 gap-2"
                     onClick={() => handleOAuth("github")}
                     disabled={oauthLoading !== null}
                   >
@@ -216,7 +212,7 @@ function LoginContent() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border/50" />
+                  <div className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
@@ -235,7 +231,7 @@ function LoginContent() {
                   placeholder="Full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10 h-11 backdrop-blur-sm bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10"
+                  className="pl-10 h-11"
                 />
               </div>
             )}
@@ -247,7 +243,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="pl-10 h-11 backdrop-blur-sm bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10"
+                className="pl-10 h-11"
               />
             </div>
             <div className="relative">
@@ -259,7 +255,7 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="pl-10 h-11 backdrop-blur-sm bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10"
+                className="pl-10 h-11"
               />
             </div>
 
@@ -267,7 +263,7 @@ function LoginContent() {
               <p className="text-sm text-destructive text-center">{error}</p>
             )}
 
-            <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-500 border-0 shadow-lg shadow-blue-600/20" disabled={loading}>
+            <Button type="submit" className="w-full h-11" disabled={loading}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -287,7 +283,7 @@ function LoginContent() {
                 setIsRegister(!isRegister);
                 setError("");
               }}
-              className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+              className="text-primary hover:underline font-medium"
             >
               {isRegister ? "Sign in" : "Create one"}
             </button>
