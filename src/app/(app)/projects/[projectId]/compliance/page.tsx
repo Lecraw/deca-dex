@@ -46,7 +46,10 @@ export default function CompliancePage() {
         }),
       });
       const text = await res.text();
-      const data = JSON.parse(text.trim());
+      const trimmed = text.replace(/^\s+/, "").trim();
+      const jsonStart = trimmed.indexOf("{");
+      if (jsonStart === -1) throw new Error("Failed to parse compliance response");
+      const data = JSON.parse(trimmed.substring(jsonStart));
       if (data.error) throw new Error(data.error);
       return data;
     },

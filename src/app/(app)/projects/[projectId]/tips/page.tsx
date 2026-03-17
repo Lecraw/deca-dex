@@ -79,8 +79,10 @@ export default function TipsPage() {
       }
       // Response is streamed: spaces as keepalive, then JSON at end
       const text = await res.text();
-      const trimmed = text.trim();
-      const data = JSON.parse(trimmed);
+      const trimmed = text.replace(/^\s+/, "").trim();
+      const jsonStart = trimmed.indexOf("{");
+      if (jsonStart === -1) throw new Error("Failed to parse tips response");
+      const data = JSON.parse(trimmed.substring(jsonStart));
       if (data.error) throw new Error(data.error);
       return data;
     },

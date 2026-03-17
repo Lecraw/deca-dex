@@ -276,7 +276,16 @@ Scenario: ${scenarioData.scenario.substring(0, 500)}...
 
 PIs to address: ${piList}
 
-The transcript is from speech-to-text — focus on substance, not transcription errors. Evaluate communication, professionalism, and organization. Be encouraging but honest. Return ONLY a JSON object (no markdown, no code blocks).
+The transcript is from speech-to-text — focus on substance, not transcription errors. Be STRICT and realistic like an actual DECA judge.
+
+CRITICAL SCORING RULES:
+- A response of just a few words or sentences should score VERY LOW (0-20 total). Do NOT give high scores for minimal effort.
+- If the student barely addresses any PIs, score each PI in the "Little/No Value" range.
+- A perfect score requires thorough, professional, well-structured responses addressing ALL performance indicators.
+- Score proportionally to the depth and quality of the response. Short or vague answers = low scores.
+- Be constructive in feedback but DO NOT inflate scores.
+
+Return ONLY a JSON object (no markdown, no code blocks).
 
 ${scoringInstructions}`,
             messages: [
