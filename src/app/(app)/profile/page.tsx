@@ -59,8 +59,12 @@ export default function ProfilePage() {
   const xp = profile?.xp ?? 0;
   const level = profile?.level ?? 1;
   const streak = profile?.streakDays ?? 0;
-  const xpForNextLevel = level * 100;
-  const xpProgress = Math.min((xp / xpForNextLevel) * 100, 100);
+  const LEVEL_THRESHOLDS = [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000, 5000, 6500, 8000, 10000, 12500, 15000, 18000, 22000, 27000, 33000];
+  const currentThreshold = LEVEL_THRESHOLDS[level - 1] || 0;
+  const nextThreshold = LEVEL_THRESHOLDS[level] || currentThreshold + 5000;
+  const xpInLevel = xp - currentThreshold;
+  const xpNeededForLevel = nextThreshold - currentThreshold;
+  const xpProgress = Math.min((xpInLevel / xpNeededForLevel) * 100, 100);
   const badges = profile?.badges ?? [];
   const counts = profile?._count ?? {};
 
@@ -106,7 +110,7 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Level {level}</span>
-              <span className="text-muted-foreground">{xp} / {xpForNextLevel} XP to Level {level + 1}</span>
+              <span className="text-muted-foreground">{xp} / {nextThreshold} XP to Level {level + 1}</span>
             </div>
             <Progress value={xpProgress} />
           </div>

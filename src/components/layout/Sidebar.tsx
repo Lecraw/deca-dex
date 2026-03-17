@@ -34,19 +34,21 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col border-r bg-card transition-all duration-300",
+        "hidden md:flex flex-col border-r bg-card transition-all duration-300 relative z-10",
         collapsed ? "w-16" : "w-64"
       )}
     >
-      <div className="flex items-center gap-2 p-4 border-b">
-        <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0" />
+      <div className={cn("flex items-center border-b", collapsed ? "justify-center p-3" : "gap-2 p-4")}>
         {!collapsed && (
-          <span className="font-bold text-lg tracking-tight">Nexari</span>
+          <>
+            <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0" />
+            <span className="font-bold text-lg tracking-tight">Nexari</span>
+          </>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className={cn("ml-auto h-8 w-8", collapsed && "ml-0")}
+          className={cn("h-8 w-8 shrink-0", !collapsed && "ml-auto")}
           onClick={() => setCollapsed(!collapsed)}
         >
           <ChevronLeft
