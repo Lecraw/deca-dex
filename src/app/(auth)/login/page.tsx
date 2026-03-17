@@ -98,15 +98,22 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[hsl(220,60%,12%)] to-[hsl(220,70%,8%)] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(220,80%,25%)_0%,transparent_60%)] opacity-50" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,hsl(220,80%,20%)_0%,transparent_60%)] opacity-30" />
+    <div className="min-h-screen flex relative overflow-hidden">
+      {/* Left panel — branding with obsidian gradient */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        {/* Obsidian gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.10_0.03_270)] via-[oklch(0.08_0.04_280)] to-[oklch(0.06_0.03_260)]" />
+
+        {/* Animated gradient orbs */}
+        <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,oklch(0.40_0.25_280/0.25)_0%,transparent_70%)] animate-float-slow" />
+        <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.40_0.20_255/0.20)_0%,transparent_70%)] animate-float-slower" />
+        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,oklch(0.50_0.18_300/0.12)_0%,transparent_60%)] animate-pulse-glow" />
+
         {/* Large faded watermark logo */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Image src="/logo.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.06]" />
+          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.04]" />
         </div>
+
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
             <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10" />
@@ -116,36 +123,39 @@ function LoginContent() {
           <div className="space-y-6 max-w-md">
             <h1 className="text-4xl font-bold leading-tight">
               Build Winning DECA Projects{" "}
-              <span className="text-blue-400">with AI</span>
+              <span className="text-gradient">with AI</span>
             </h1>
-            <p className="text-blue-100/70 text-lg leading-relaxed">
+            <p className="text-violet-100/50 text-lg leading-relaxed">
               From idea generation to judge-ready pitch decks. AI mentoring,
               compliance checking, and roleplay practice — all in one platform.
             </p>
-            <div className="flex flex-col gap-3 text-sm text-blue-200/60">
+            <div className="flex flex-col gap-3 text-sm text-violet-200/40">
               {[
                 "AI-powered idea generation for every DECA event",
                 "Automatic rubric scoring & compliance checks",
                 "Roleplay practice with an AI judge",
                 "Export to PowerPoint, Word & PDF",
               ].map((item) => (
-                <div key={item} className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-blue-400" />
+                <div key={item} className="flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-violet-400 to-blue-400" />
                   {item}
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="text-xs text-blue-200/30">
+          <p className="text-xs text-violet-200/20">
             Not affiliated with DECA Inc.
           </p>
         </div>
       </div>
 
       {/* Right panel — auth form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-sm space-y-8">
+      <div className="flex-1 flex items-center justify-center p-6 bg-background relative">
+        {/* Subtle orb in the background */}
+        <div className="absolute -top-1/3 -right-1/3 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.45_0.22_280/0.06)_0%,transparent_70%)] pointer-events-none" />
+
+        <div className="w-full max-w-sm space-y-8 relative z-10">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
             <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden" />
@@ -171,7 +181,7 @@ function LoginContent() {
                 {availableProviders.google && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 gap-2"
+                    className="w-full h-11 gap-2 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-sm"
                     onClick={() => handleOAuth("google")}
                     disabled={oauthLoading !== null}
                   >
@@ -192,7 +202,7 @@ function LoginContent() {
                 {availableProviders.github && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 gap-2"
+                    className="w-full h-11 gap-2 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-sm"
                     onClick={() => handleOAuth("github")}
                     disabled={oauthLoading !== null}
                   >
@@ -210,7 +220,7 @@ function LoginContent() {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t" />
+                  <div className="w-full border-t border-border/50" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
@@ -230,7 +240,7 @@ function LoginContent() {
                   placeholder="Full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10 h-11"
+                  className="pl-10 h-11 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5"
                 />
               </div>
             )}
@@ -242,7 +252,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="pl-10 h-11"
+                className="pl-10 h-11 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5"
               />
             </div>
             <div className="relative">
@@ -254,7 +264,7 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="pl-10 h-11"
+                className="pl-10 h-11 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5"
               />
             </div>
 
@@ -262,7 +272,7 @@ function LoginContent() {
               <p className="text-sm text-destructive text-center">{error}</p>
             )}
 
-            <Button type="submit" className="w-full h-11" disabled={loading}>
+            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 border-0 shadow-lg shadow-violet-500/20" disabled={loading}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -283,7 +293,7 @@ function LoginContent() {
                 setIsRegister(!isRegister);
                 setError("");
               }}
-              className="text-primary hover:underline font-medium"
+              className="text-violet-500 dark:text-violet-400 hover:underline font-medium"
             >
               {isRegister ? "Sign in" : "Create one"}
             </button>
