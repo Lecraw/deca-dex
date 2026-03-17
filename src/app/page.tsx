@@ -57,7 +57,8 @@ export default function LandingPage() {
       <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10" />
+            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden" />
+            <Image src="/logo-light.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:hidden block" />
             <span className="font-bold text-lg">Nexari</span>
           </div>
           <div className="flex items-center gap-2">
@@ -77,7 +78,8 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.25_0.08_255)_0%,transparent_60%)] opacity-40" />
           <div className="container mx-auto px-4 text-center relative z-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm text-primary mb-6">
-              <Image src="/logo-white.png" alt="" width={14} height={14} className="w-3.5 h-3.5" />
+              <Image src="/logo-white.png" alt="" width={14} height={14} className="w-3.5 h-3.5 dark:block hidden" />
+              <Image src="/logo-light.png" alt="" width={14} height={14} className="w-3.5 h-3.5 dark:hidden block" />
               AI-Powered DECA Assistant
             </div>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-3xl mx-auto">

@@ -41,7 +41,8 @@ export function Sidebar() {
       <div className={cn("flex items-center border-b", collapsed ? "justify-center p-3" : "gap-2 p-4")}>
         {!collapsed && (
           <>
-            <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0" />
+            <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0 dark:block hidden" />
+            <Image src="/logo-light.png" alt="Nexari" width={36} height={36} className="w-9 h-9 shrink-0 dark:hidden block" />
             <span className="font-bold text-lg tracking-tight">Nexari</span>
           </>
         )}

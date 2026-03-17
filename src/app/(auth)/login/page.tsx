@@ -148,7 +148,8 @@ function LoginContent() {
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10" />
+            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden" />
+            <Image src="/logo-light.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:hidden block" />
             <span className="font-bold text-xl">Nexari</span>
           </div>
 

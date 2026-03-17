@@ -12,13 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { LogOut, User, Menu } from "lucide-react";
+import { LogOut, User, Menu, Sun, Moon } from "lucide-react";
 import Image from "next/image";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "./MobileNav";
+import { useTheme } from "next-themes";
 
 export function Topbar() {
   const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -47,7 +49,8 @@ export function Topbar() {
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-1.5">
-          <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8" />
+          <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:block hidden" />
+          <Image src="/logo-light.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:hidden block" />
           <span className="font-bold text-sm">Nexari</span>
         </div>
       </div>
@@ -63,6 +66,17 @@ export function Topbar() {
           <Progress value={xpProgress} className="w-24 h-2" />
           <span className="text-xs font-bold">{xp} XP</span>
         </div>
+
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Sun className="h-4 w-4 hidden dark:block" />
+          <Moon className="h-4 w-4 block dark:hidden" />
+        </Button>
 
         {/* User Menu */}
         {session?.user ? (

@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" {...{ suppressHydrationMismatch: true }}>
       <body
         className={`${jakarta.variable} ${inter.variable} ${jetbrains.variable} antialiased`}
       >
