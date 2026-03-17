@@ -31,7 +31,7 @@ export function MobileNav() {
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b">
         <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:block hidden" />
-        <Image src="/logo-light.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:hidden block" />
+        <Image src="/logo.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:hidden block" />
         <span className="font-bold text-lg">Nexari</span>
       </div>
 

@@ -50,7 +50,7 @@ export function Topbar() {
         </Sheet>
         <div className="flex items-center gap-1.5">
           <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:block hidden" />
-          <Image src="/logo-light.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:hidden block" />
+          <Image src="/logo.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:hidden block" />
           <span className="font-bold text-sm">Nexari</span>
         </div>
       </div>
