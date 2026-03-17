@@ -99,19 +99,16 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen flex relative overflow-hidden">
-      {/* Left panel — branding with obsidian gradient */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Obsidian gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.10_0.03_270)] via-[oklch(0.08_0.04_280)] to-[oklch(0.06_0.03_260)]" />
+      {/* Left panel — branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[oklch(0.10_0.02_255)]">
+        {/* Gradient orbs */}
+        <div className="absolute -top-[200px] -left-[100px] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.45_0.22_260/0.20)_0%,transparent_70%)] animate-float-slow" />
+        <div className="absolute -bottom-[150px] -right-[100px] w-[450px] h-[450px] rounded-full bg-[radial-gradient(circle,oklch(0.45_0.20_240/0.15)_0%,transparent_70%)] animate-float-slower" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] rounded-full bg-[radial-gradient(circle,oklch(0.50_0.18_270/0.10)_0%,transparent_60%)] animate-pulse-glow" />
 
-        {/* Animated gradient orbs */}
-        <div className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,oklch(0.40_0.25_280/0.25)_0%,transparent_70%)] animate-float-slow" />
-        <div className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.40_0.20_255/0.20)_0%,transparent_70%)] animate-float-slower" />
-        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-[radial-gradient(circle,oklch(0.50_0.18_300/0.12)_0%,transparent_60%)] animate-pulse-glow" />
-
-        {/* Large faded watermark logo */}
+        {/* Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.04]" />
+          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.03]" />
         </div>
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
@@ -123,13 +120,13 @@ function LoginContent() {
           <div className="space-y-6 max-w-md">
             <h1 className="text-4xl font-bold leading-tight">
               Build Winning DECA Projects{" "}
-              <span className="text-gradient">with AI</span>
+              <span className="text-blue-400">with AI</span>
             </h1>
-            <p className="text-violet-100/50 text-lg leading-relaxed">
+            <p className="text-blue-100/50 text-lg leading-relaxed">
               From idea generation to judge-ready pitch decks. AI mentoring,
               compliance checking, and roleplay practice — all in one platform.
             </p>
-            <div className="flex flex-col gap-3 text-sm text-violet-200/40">
+            <div className="flex flex-col gap-3 text-sm text-blue-200/40">
               {[
                 "AI-powered idea generation for every DECA event",
                 "Automatic rubric scoring & compliance checks",
@@ -137,14 +134,14 @@ function LoginContent() {
                 "Export to PowerPoint, Word & PDF",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-2.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-violet-400 to-blue-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                   {item}
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="text-xs text-violet-200/20">
+          <p className="text-xs text-blue-200/20">
             Not affiliated with DECA Inc.
           </p>
         </div>
@@ -152,8 +149,8 @@ function LoginContent() {
 
       {/* Right panel — auth form */}
       <div className="flex-1 flex items-center justify-center p-6 bg-background relative">
-        {/* Subtle orb in the background */}
-        <div className="absolute -top-1/3 -right-1/3 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.45_0.22_280/0.06)_0%,transparent_70%)] pointer-events-none" />
+        {/* Subtle orb */}
+        <div className="absolute -top-[200px] -right-[200px] w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,oklch(0.50_0.22_260/0.05)_0%,transparent_70%)] pointer-events-none" />
 
         <div className="w-full max-w-sm space-y-8 relative z-10">
           {/* Mobile logo */}
@@ -174,14 +171,13 @@ function LoginContent() {
             </p>
           </div>
 
-          {/* OAuth buttons - only show when configured */}
           {hasOAuth && (
             <>
               <div className="space-y-3">
                 {availableProviders.google && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 gap-2 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-sm"
+                    className="w-full h-11 gap-2 dark:glass glass-light border-0"
                     onClick={() => handleOAuth("google")}
                     disabled={oauthLoading !== null}
                   >
@@ -202,7 +198,7 @@ function LoginContent() {
                 {availableProviders.github && (
                   <Button
                     variant="outline"
-                    className="w-full h-11 gap-2 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-sm"
+                    className="w-full h-11 gap-2 dark:glass glass-light border-0"
                     onClick={() => handleOAuth("github")}
                     disabled={oauthLoading !== null}
                   >
@@ -231,7 +227,6 @@ function LoginContent() {
             </>
           )}
 
-          {/* Email/Password form */}
           <form onSubmit={handleCredentialSubmit} className="space-y-4">
             {isRegister && (
               <div className="relative">
@@ -240,7 +235,7 @@ function LoginContent() {
                   placeholder="Full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10 h-11 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5"
+                  className="pl-10 h-11 backdrop-blur-sm bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10"
                 />
               </div>
             )}
@@ -252,7 +247,7 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="pl-10 h-11 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5"
+                className="pl-10 h-11 backdrop-blur-sm bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10"
               />
             </div>
             <div className="relative">
@@ -264,7 +259,7 @@ function LoginContent() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="pl-10 h-11 border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5"
+                className="pl-10 h-11 backdrop-blur-sm bg-white/5 dark:bg-white/5 border-white/10 dark:border-white/10"
               />
             </div>
 
@@ -272,7 +267,7 @@ function LoginContent() {
               <p className="text-sm text-destructive text-center">{error}</p>
             )}
 
-            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 border-0 shadow-lg shadow-violet-500/20" disabled={loading}>
+            <Button type="submit" className="w-full h-11 bg-blue-600 hover:bg-blue-500 border-0 shadow-lg shadow-blue-600/20" disabled={loading}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -284,7 +279,6 @@ function LoginContent() {
             </Button>
           </form>
 
-          {/* Toggle register/login */}
           <p className="text-center text-sm text-muted-foreground">
             {isRegister ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
@@ -293,7 +287,7 @@ function LoginContent() {
                 setIsRegister(!isRegister);
                 setError("");
               }}
-              className="text-violet-500 dark:text-violet-400 hover:underline font-medium"
+              className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
             >
               {isRegister ? "Sign in" : "Create one"}
             </button>
