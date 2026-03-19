@@ -245,7 +245,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 {todayTasks.slice(0, 5).map((task: any) => (
                   <div key={task.id} className="flex items-center gap-3 text-sm py-1.5 group">
-                    <div className="w-1.5 h-1.5 bg-primary rounded-sm shrink-0 shadow-[0_0_6px_oklch(0.72_0.19_195/0.4)]" />
+                    <div className="w-1.5 h-1.5 bg-primary rounded-sm shrink-0 shadow-[0_0_6px_oklch(0.50_0.16_255/0.4)]" />
                     <span className="truncate group-hover:text-foreground transition-colors">{task.title}</span>
                   </div>
                 ))}

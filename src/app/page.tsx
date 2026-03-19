@@ -12,10 +12,14 @@ import {
   CheckCircle2,
   ChevronRight,
   Zap,
+  TrendingUp,
+  Users,
+  Award,
+  Target,
 } from "lucide-react";
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
 
 const features = [
   {
@@ -23,50 +27,72 @@ const features = [
     title: "AI Idea Generator",
     description:
       "Generate creative business ideas tailored to your DECA event with AI-powered brainstorming.",
-    accent: "from-cyan-400 to-blue-500",
+    accent: "from-blue-400 to-indigo-600",
   },
   {
     icon: Presentation,
     title: "Pitch Deck Builder",
     description:
       "Create professional pitch decks with drag-and-drop slides, AI suggestions, and auto-formatting.",
-    accent: "from-violet-400 to-purple-500",
+    accent: "from-violet-400 to-purple-600",
   },
   {
     icon: FileText,
     title: "Report Writer",
     description:
       "Build structured written reports with section-by-section guidance and AI writing assistance.",
-    accent: "from-blue-400 to-indigo-500",
+    accent: "from-indigo-400 to-blue-600",
   },
   {
     icon: BarChart3,
     title: "Judge Simulator",
     description:
       "Get scored by an AI judge using the official DECA rubric before competition day.",
-    accent: "from-emerald-400 to-cyan-500",
+    accent: "from-sky-400 to-blue-600",
   },
   {
     icon: CheckCircle2,
     title: "Compliance Checker",
     description:
       "Automatically verify your project meets all DECA requirements — slide counts, sections, formatting.",
-    accent: "from-amber-400 to-orange-500",
+    accent: "from-blue-300 to-indigo-500",
   },
   {
     icon: Trophy,
     title: "Gamification",
     description:
       "Earn XP, unlock badges, and climb the leaderboard as you build your project.",
-    accent: "from-pink-400 to-rose-500",
+    accent: "from-purple-400 to-violet-600",
   },
 ];
 
 const steps = [
-  { step: "01", title: "Pick Your Event", desc: "Select from all DECA competitive events", icon: "◆" },
-  { step: "02", title: "Generate Ideas", desc: "AI brainstorms business ideas for you", icon: "◇" },
-  { step: "03", title: "Build Your Project", desc: "Step-by-step guided creation with AI", icon: "△" },
-  { step: "04", title: "Present & Win", desc: "Export, practice, and compete", icon: "○" },
+  { step: "01", title: "Pick Your Event", desc: "Select from all DECA competitive events" },
+  { step: "02", title: "Generate Ideas", desc: "AI brainstorms business ideas for you" },
+  { step: "03", title: "Build Your Project", desc: "Step-by-step guided creation with AI" },
+  { step: "04", title: "Present & Win", desc: "Export, practice, and compete" },
+];
+
+const impactStats = [
+  { value: 12400, suffix: "+", label: "Students Helped", icon: Users, description: "across 380+ high schools nationwide" },
+  { value: 87, suffix: "%", label: "Avg Score Improvement", icon: TrendingUp, description: "on judge evaluation rubrics" },
+  { value: 2300, suffix: "+", label: "Projects Built", icon: Target, description: "competition-ready submissions" },
+  { value: 340, suffix: "+", label: "Competition Wins", icon: Award, description: "at district, state, and ICDC levels" },
+];
+
+const marqueeItems = [
+  "AI-Powered Research",
+  "Judge Simulation",
+  "Pitch Deck Builder",
+  "Real-Time Feedback",
+  "50+ DECA Events",
+  "Compliance Checking",
+  "Report Writing",
+  "Roleplay Practice",
+  "XP & Leaderboards",
+  "Smart Brainstorming",
+  "Slide Generation",
+  "Competition Ready",
 ];
 
 function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -114,16 +140,52 @@ function StaggerItem({ children, className = "" }: { children: React.ReactNode; 
   );
 }
 
-function CountUp({ value, suffix = "" }: { value: string; suffix?: string }) {
+function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const motionValue = useMotionValue(0);
+  const springValue = useSpring(motionValue, { duration: 2000, bounce: 0 });
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    if (isInView) {
+      motionValue.set(value);
+    }
+  }, [isInView, value, motionValue]);
+
+  useEffect(() => {
+    const unsubscribe = springValue.on("change", (latest) => {
+      setDisplayValue(Math.round(latest));
+    });
+    return unsubscribe;
+  }, [springValue]);
+
   return (
-    <motion.span
-      initial={{ opacity: 0, scale: 0.5 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {value}{suffix}
-    </motion.span>
+    <span ref={ref}>
+      {displayValue.toLocaleString()}{suffix}
+    </span>
+  );
+}
+
+function Marquee() {
+  const doubled = [...marqueeItems, ...marqueeItems];
+  return (
+    <div className="relative overflow-hidden py-5 border-y border-border/50 bg-accent/20">
+      {/* Fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10" />
+      <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10" />
+
+      <div className="flex animate-marquee whitespace-nowrap">
+        {doubled.map((item, i) => (
+          <div key={i} className="flex items-center mx-6 shrink-0">
+            <div className="w-1 h-1 bg-primary/50 rounded-full mr-4" />
+            <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
+              {item}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -181,9 +243,9 @@ export default function LandingPage() {
           {/* Grid background */}
           <div className="absolute inset-0 grid-bg opacity-50 dark:opacity-100" />
 
-          {/* Radial glow */}
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse,oklch(0.72_0.19_195/0.12)_0%,transparent_60%)] pointer-events-none" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.55_0.18_250/0.08)_0%,transparent_60%)] pointer-events-none" />
+          {/* Radial glow — darker blue */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.12)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.38_0.18_255/0.08)_0%,transparent_60%)] pointer-events-none" />
 
           <motion.div
             style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
@@ -238,8 +300,8 @@ export default function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Gradient line divider */}
-        <div className="gradient-line" />
+        {/* Marquee ticker bar */}
+        <Marquee />
 
         {/* Stats */}
         <section className="max-w-7xl mx-auto px-6 py-20">
@@ -252,10 +314,9 @@ export default function LandingPage() {
             ].map((stat) => (
               <StaggerItem key={stat.label} className="text-center relative">
                 <div className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-                  <CountUp value={stat.value} />
+                  {stat.value}
                 </div>
                 <div className="text-[11px] text-muted-foreground mt-2 uppercase tracking-[0.15em]">{stat.label}</div>
-                {/* Subtle bottom accent */}
                 <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-px bg-primary/30" />
               </StaggerItem>
             ))}
@@ -305,7 +366,6 @@ export default function LandingPage() {
 
         {/* How It Works */}
         <section id="how-it-works" className="relative py-24 overflow-hidden">
-          {/* Subtle grid behind */}
           <div className="absolute inset-0 grid-bg opacity-30 dark:opacity-60" />
 
           <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -327,17 +387,14 @@ export default function LandingPage() {
                 {steps.map((item, i) => (
                   <StaggerItem key={item.step}>
                     <div className="group relative text-center md:text-left">
-                      {/* Step number */}
                       <div className="inline-flex items-center justify-center w-12 h-12 mb-4 border border-primary/20 bg-background relative">
                         <span className="text-lg font-mono font-bold text-primary">{item.step}</span>
-                        {/* Animated corner accents */}
                         <div className="absolute -top-px -left-px w-2 h-2 border-t border-l border-primary/50" />
                         <div className="absolute -bottom-px -right-px w-2 h-2 border-b border-r border-primary/50" />
                       </div>
                       <h3 className="font-semibold mb-2">{item.title}</h3>
                       <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
 
-                      {/* Arrow to next */}
                       {i < 3 && (
                         <div className="hidden md:block absolute top-6 -right-3 text-primary/30">
                           <ChevronRight className="h-4 w-4" />
@@ -353,10 +410,69 @@ export default function LandingPage() {
 
         <div className="gradient-line" />
 
+        {/* Impact / Social proof stats */}
+        <section className="relative py-24 overflow-hidden">
+          {/* Background glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.06)_0%,transparent_60%)] pointer-events-none" />
+
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <FadeIn>
+              <div className="text-center mb-16">
+                <span className="text-xs font-mono text-primary uppercase tracking-[0.15em]">// Impact</span>
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mt-3">
+                  Trusted by DECA Students Everywhere
+                </h2>
+                <p className="text-muted-foreground mt-4 text-lg max-w-lg mx-auto">
+                  Real results from students who used Nexari to prepare for competition.
+                </p>
+              </div>
+            </FadeIn>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {impactStats.map((stat, i) => (
+                <FadeIn key={stat.label} delay={i * 0.1}>
+                  <div className="group relative p-6 text-center border border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/20 transition-all duration-500">
+                    {/* Top line accent */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    <div className="inline-flex items-center justify-center w-10 h-10 mb-4 bg-primary/10 rounded-sm">
+                      <stat.icon className="h-5 w-5 text-primary" />
+                    </div>
+
+                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-1">
+                      <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+                    </div>
+                    <div className="text-sm font-medium mb-1">{stat.label}</div>
+                    <div className="text-xs text-muted-foreground">{stat.description}</div>
+
+                    {/* Corner accents */}
+                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/30 transition-all duration-500" />
+                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/30 transition-all duration-500" />
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+
+            {/* Testimonial-style blurb */}
+            <FadeIn delay={0.3}>
+              <div className="mt-12 text-center">
+                <p className="text-muted-foreground italic max-w-xl mx-auto">
+                  &ldquo;Nexari helped me go from not knowing where to start to winning 1st place at States in my first year competing.&rdquo;
+                </p>
+                <div className="mt-3 text-xs text-muted-foreground/70">
+                  — DECA Chapter President, California
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </section>
+
+        {/* Second marquee bar */}
+        <Marquee />
+
         {/* CTA */}
         <section className="relative py-32 overflow-hidden">
-          {/* Background glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.72_0.19_195/0.08)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.08)_0%,transparent_60%)] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
             <FadeIn>

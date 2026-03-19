@@ -83,9 +83,9 @@ export function Sidebar() {
             >
               {/* Active indicator line */}
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-sm shadow-[0_0_8px_oklch(0.72_0.19_195/0.4)]" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-r-sm shadow-[0_0_8px_oklch(0.50_0.16_255/0.4)]" />
               )}
-              <item.icon className={cn("h-4 w-4 shrink-0", isActive && "drop-shadow-[0_0_4px_oklch(0.72_0.19_195/0.4)]")} />
+              <item.icon className={cn("h-4 w-4 shrink-0", isActive && "drop-shadow-[0_0_4px_oklch(0.50_0.16_255/0.4)]")} />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );
