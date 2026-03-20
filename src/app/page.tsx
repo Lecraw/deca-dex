@@ -216,17 +216,31 @@ function LogoSpinSection() {
   }, []);
 
   const rotY = scrollProgress * 720;
-  // Stats pop in one by one as scroll progresses (between 15% and 75% of scroll)
-  const getStatStyle = (index: number) => {
-    const statStart = 0.15 + index * 0.08;
-    const statEnd = statStart + 0.12;
+
+  // Stats slide in from left or right as you scroll
+  const getStatStyle = (index: number, side: "left" | "right") => {
+    const statStart = 0.12 + index * 0.1;
+    const statEnd = statStart + 0.15;
     const t = Math.max(0, Math.min(1, (scrollProgress - statStart) / (statEnd - statStart)));
     const eased = 1 - Math.pow(1 - t, 3);
+    const xOffset = side === "left" ? -(1 - eased) * 70 : (1 - eased) * 70;
     return {
       opacity: eased,
-      transform: `translateY(${(1 - eased) * 30}px) scale(${0.85 + eased * 0.15})`,
+      transform: `translateX(${xOffset}px)`,
       transition: "none" as const,
     };
+  };
+
+  const logoMaskStyle: React.CSSProperties = {
+    background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+    WebkitMaskImage: "url(/logo-white.png)",
+    maskImage: "url(/logo-white.png)",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
   };
 
   return (
@@ -239,104 +253,90 @@ function LogoSpinSection() {
         </p>
       </div>
 
-      {/* 3D Logo center piece */}
-      <div className="flex justify-center mb-16" style={{ perspective: "1000px" }}>
-        <div className="relative">
-          {/* Orbit rings */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[240px] h-[240px] md:w-[320px] md:h-[320px] border border-primary/8 rounded-full orbit-ring" />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[340px] h-[340px] md:w-[440px] md:h-[440px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
-          </div>
+      {/* 3-column: left stats | spinning blue logo | right stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-10 items-center">
 
-          {/* The 3D logo */}
+        {/* Left stats — slide in from left */}
+        <div className="space-y-4 order-2 lg:order-1">
+          {platformStats.slice(0, 3).map((stat, i) => (
+            <div
+              key={stat.label}
+              className="group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-colors duration-500"
+              style={getStatStyle(i, "left")}
+            >
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="flex items-baseline gap-3">
+                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
+                <span className="text-[10px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
+              </div>
+              <p className="text-[12px] text-muted-foreground mt-1.5">{stat.desc}</p>
+              <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+              <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+            </div>
+          ))}
+        </div>
+
+        {/* Center — 3D spinning blue logo (no background card) */}
+        <div className="relative flex items-center justify-center order-1 lg:order-2 py-8 lg:py-0" style={{ perspective: "1000px" }}>
+          {/* Orbit rings */}
+          <div className="absolute w-[220px] h-[220px] md:w-[280px] md:h-[280px] border border-primary/8 rounded-full orbit-ring" />
+          <div className="absolute w-[320px] h-[320px] md:w-[400px] md:h-[400px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
+
+          {/* The spinning logo — icon itself is blue via CSS mask */}
           <div
-            className="relative z-10 w-44 h-44 md:w-56 md:h-56"
+            className="relative z-10 w-40 h-40 md:w-48 md:h-48"
             style={{
-              transform: `rotateY(${rotY}deg) rotateX(${Math.sin(scrollProgress * Math.PI * 3) * 12}deg)`,
+              transform: `rotateY(${rotY}deg) rotateX(${Math.sin(scrollProgress * Math.PI * 3) * 10}deg)`,
               transformStyle: "preserve-3d",
+              filter: "drop-shadow(0 0 30px oklch(0.50 0.16 255 / 0.4)) drop-shadow(0 0 60px oklch(0.45 0.16 255 / 0.2))",
             }}
           >
-            {/* Dark blue 3D face - front */}
+            {/* Front face — blue logo */}
             <div
-              className="absolute inset-0 rounded-2xl"
+              className="absolute inset-0"
               style={{
-                background: "linear-gradient(145deg, oklch(0.30 0.15 255), oklch(0.15 0.12 260))",
-                boxShadow: "0 0 60px oklch(0.40 0.16 255 / 0.35), inset 0 1px 0 oklch(0.50 0.16 255 / 0.2), inset 0 -2px 0 oklch(0.10 0.10 260 / 0.5)",
-                transform: "translateZ(12px)",
+                transform: "translateZ(4px)",
                 backfaceVisibility: "hidden",
               }}
             >
-              <div className="absolute inset-0 flex items-center justify-center p-8">
-                <Image
-                  src="/logo-white.png"
-                  alt="Nexari"
-                  width={200}
-                  height={200}
-                  className="w-full h-full object-contain drop-shadow-[0_0_20px_oklch(0.60_0.16_255/0.5)]"
-                />
-              </div>
-              {/* Corner accents */}
-              <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-white/10 rounded-tl-md" />
-              <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-white/10 rounded-br-md" />
+              <div className="w-full h-full" style={logoMaskStyle} />
             </div>
 
-            {/* Dark blue 3D face - back */}
+            {/* Back face — blue logo */}
             <div
-              className="absolute inset-0 rounded-2xl"
+              className="absolute inset-0"
               style={{
-                background: "linear-gradient(145deg, oklch(0.25 0.12 260), oklch(0.12 0.10 265))",
-                boxShadow: "0 0 60px oklch(0.40 0.16 255 / 0.2), inset 0 1px 0 oklch(0.40 0.14 255 / 0.15)",
-                transform: "translateZ(-12px) rotateY(180deg)",
+                transform: "translateZ(-4px) rotateY(180deg)",
                 backfaceVisibility: "hidden",
               }}
             >
-              <div className="absolute inset-0 flex items-center justify-center p-8">
-                <Image
-                  src="/logo-white.png"
-                  alt="Nexari"
-                  width={200}
-                  height={200}
-                  className="w-full h-full object-contain opacity-60"
-                />
-              </div>
+              <div className="w-full h-full opacity-75" style={logoMaskStyle} />
             </div>
-
-            {/* 3D edge / thickness */}
-            <div
-              className="absolute top-0 bottom-0 -right-[1px] w-[24px]"
-              style={{
-                background: "linear-gradient(180deg, oklch(0.22 0.12 258), oklch(0.12 0.08 262))",
-                transform: "rotateY(90deg) translateZ(calc(50% - 12px))",
-                transformOrigin: "right center",
-              }}
-            />
           </div>
 
-          {/* Glow underneath */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 md:w-80 md:h-80 bg-[radial-gradient(circle,oklch(0.35_0.16_255/0.2)_0%,transparent_60%)] pointer-events-none blur-sm" />
+          {/* Ambient glow */}
+          <div className="absolute w-48 h-48 md:w-64 md:h-64 bg-[radial-gradient(circle,oklch(0.40_0.16_255/0.12)_0%,transparent_60%)] pointer-events-none blur-sm" />
         </div>
-      </div>
 
-      {/* Stats grid — pop in on scroll */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-        {platformStats.map((stat, i) => (
-          <div
-            key={stat.label}
-            className="group relative p-5 md:p-6 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-colors duration-500"
-            style={getStatStyle(i)}
-          >
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-baseline gap-3">
-              <span className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{stat.value}</span>
-              <span className="text-[10px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
+        {/* Right stats — slide in from right */}
+        <div className="space-y-4 order-3">
+          {platformStats.slice(3, 6).map((stat, i) => (
+            <div
+              key={stat.label}
+              className="group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-colors duration-500"
+              style={getStatStyle(i, "right")}
+            >
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="flex items-baseline gap-3">
+                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
+                <span className="text-[10px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
+              </div>
+              <p className="text-[12px] text-muted-foreground mt-1.5">{stat.desc}</p>
+              <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+              <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
             </div>
-            <p className="text-[12px] text-muted-foreground mt-1.5">{stat.desc}</p>
-            <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-            <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
