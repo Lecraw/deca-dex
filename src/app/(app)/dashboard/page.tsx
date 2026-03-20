@@ -273,7 +273,7 @@ export default function DashboardPage() {
             <span className="text-[11px] font-mono text-primary uppercase tracking-[0.18em]">// Quick Actions</span>
             <div className="mt-4 space-y-0.5">
               {[
-                { href: "/events", icon: BookOpen, label: "Browse Events" },
+                { href: "/event-catalog", icon: BookOpen, label: "Browse Events" },
                 { href: "/projects/new", icon: Plus, label: "New Project" },
                 { href: "/roleplay", icon: Mic, label: "Practice Roleplay" },
               ].map((action) => (

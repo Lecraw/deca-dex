@@ -17,7 +17,6 @@ import {
   Award,
   Target,
 } from "lucide-react";
-import Image from "next/image";
 import { useRef, useEffect, useState, useCallback } from "react";
 
 /* ─── Data ────────────────────────────────────── */
@@ -208,8 +207,8 @@ function LogoSpinSection() {
       const rect = outer.getBoundingClientRect();
       const scrollable = outer.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
-      const progress = Math.max(0, Math.min(1, -rect.top / scrollable));
-      setScrollProgress(progress);
+      const raw = -rect.top / scrollable;
+      setScrollProgress(Math.max(0, Math.min(1, raw)));
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -217,68 +216,31 @@ function LogoSpinSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Per-card visibility: one card at a time, alternating left/right
+  /* ── Card visibility ──
+     scrollProgress [0,1] → pos [0, cardCount-1]
+     Each card is "active" when pos ≈ its index.
+     Opacity = smoothstep(1 - |pos - index|), zero when |diff| ≥ 1.
+     Cards on alternating sides so overlapping crossfades look great. */
   const getCardStyle = (index: number) => {
-    const segment = 1 / cardCount;
-    const cardStart = index * segment;
-    const cardEnd = (index + 1) * segment;
-    const fadeZone = segment * 0.3;
     const side: "left" | "right" = index % 2 === 0 ? "left" : "right";
-    const dir = side === "left" ? -1 : 1;
+
+    const pos = scrollProgress * (cardCount - 1); // 0 → 5
+    const diff = pos - index;
+    const absDiff = Math.abs(diff);
 
     let opacity = 0;
-    let xOffset = dir * 50;
+    let translateX = side === "left" ? -60 : 60;
 
-    // First card: start fully visible, only fade out
-    if (index === 0) {
-      if (scrollProgress < cardEnd - fadeZone) {
-        opacity = 1;
-        xOffset = 0;
-      } else if (scrollProgress < cardEnd) {
-        const t = (cardEnd - scrollProgress) / fadeZone;
-        const eased = 1 - Math.pow(1 - t, 3);
-        opacity = eased;
-        xOffset = dir * 50 * (1 - eased);
-      }
-      return { opacity, xOffset, side };
+    if (absDiff < 1) {
+      const t = 1 - absDiff;
+      opacity = t * t * (3 - 2 * t); // smoothstep ease
+      translateX = (side === "left" ? -60 : 60) * (1 - opacity);
     }
 
-    // Last card: fade in, then stay visible
-    if (index === cardCount - 1) {
-      if (scrollProgress >= cardStart && scrollProgress < cardStart + fadeZone) {
-        const t = (scrollProgress - cardStart) / fadeZone;
-        const eased = 1 - Math.pow(1 - t, 3);
-        opacity = eased;
-        xOffset = dir * 50 * (1 - eased);
-      } else if (scrollProgress >= cardStart + fadeZone) {
-        opacity = 1;
-        xOffset = 0;
-      }
-      return { opacity, xOffset, side };
-    }
-
-    // Middle cards: fade in and fade out
-    if (scrollProgress >= cardStart && scrollProgress < cardEnd) {
-      if (scrollProgress < cardStart + fadeZone) {
-        const t = (scrollProgress - cardStart) / fadeZone;
-        const eased = 1 - Math.pow(1 - t, 3);
-        opacity = eased;
-        xOffset = dir * 50 * (1 - eased);
-      } else if (scrollProgress > cardEnd - fadeZone) {
-        const t = (cardEnd - scrollProgress) / fadeZone;
-        const eased = 1 - Math.pow(1 - t, 3);
-        opacity = eased;
-        xOffset = dir * 50 * (1 - eased);
-      } else {
-        opacity = 1;
-        xOffset = 0;
-      }
-    }
-
-    return { opacity, xOffset, side };
+    return { opacity, translateX, side };
   };
 
-  const rotY = scrollProgress * 360;
+  const rotY = scrollProgress * 720;
 
   const logoMaskStyle: React.CSSProperties = {
     background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
@@ -293,8 +255,8 @@ function LogoSpinSection() {
   };
 
   return (
-    <div ref={outerRef} style={{ height: "350vh" }} className="relative">
-      {/* Sticky viewport — stays pinned while user scrolls through tall container */}
+    <div ref={outerRef} style={{ height: "450vh" }} className="relative">
+      {/* Sticky viewport — pinned while user scrolls through 450vh container */}
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         {/* Background effects */}
         <div className="absolute inset-0 grid-bg opacity-15 dark:opacity-30" />
@@ -336,31 +298,40 @@ function LogoSpinSection() {
 
         {/* Cards — one at a time, alternating sides */}
         {storyCards.map((card, i) => {
-          const { opacity, xOffset, side } = getCardStyle(i);
+          const { opacity, translateX, side } = getCardStyle(i);
+          if (opacity <= 0.01) return null; // skip invisible cards for perf
           return (
             <div
               key={card.category}
-              className={`absolute top-1/2 ${side === "left" ? "left-[4%] md:left-[8%]" : "right-[4%] md:right-[8%]"}`}
+              className={`absolute ${side === "left" ? "left-[4%] md:left-[8%]" : "right-[4%] md:right-[8%]"}`}
               style={{
                 opacity,
-                transform: `translateX(${xOffset}px) translateY(-50%)`,
-                transition: "none",
+                top: "50%",
+                transform: `translate(${translateX}px, -50%)`,
+                willChange: "transform, opacity",
                 pointerEvents: opacity > 0.5 ? "auto" : "none",
               }}
             >
-              <div className={`w-64 md:w-80 p-6 md:p-8 bg-card/80 dark:bg-card/60 backdrop-blur-xl border border-border/30 rounded-xl shadow-lg ${side === "right" ? "text-right" : ""}`}>
+              <div
+                className={`w-72 md:w-80 p-7 md:p-8 rounded-xl border shadow-2xl ${side === "right" ? "text-right" : ""}`}
+                style={{
+                  background: "oklch(0.14 0.015 260)",
+                  borderColor: "oklch(0.25 0.02 260)",
+                  boxShadow: `0 8px 32px oklch(0 0 0 / 0.4), 0 0 0 1px oklch(0.25 0.02 260 / 0.5), 0 0 ${20 * opacity}px oklch(0.50 0.16 255 / ${0.06 * opacity})`,
+                }}
+              >
                 <span className="text-primary text-[11px] font-mono uppercase tracking-[0.18em]">
                   {String(i + 1).padStart(2, "0")} / {card.category}
                 </span>
-                <h3 className="text-xl md:text-2xl font-bold mt-3 tracking-tight">{card.title}</h3>
-                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{card.desc}</p>
+                <h3 className="text-xl md:text-2xl font-bold mt-3 tracking-tight text-white">{card.title}</h3>
+                <p className="text-sm text-[oklch(0.65_0.005_250)] mt-2 leading-relaxed">{card.desc}</p>
                 {/* Progress dots */}
                 <div className={`flex gap-1.5 mt-5 ${side === "right" ? "justify-end" : ""}`}>
                   {storyCards.map((_, di) => (
                     <div
                       key={di}
                       className={`h-1 rounded-full transition-all duration-300 ${
-                        di === i ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/20"
+                        di === i ? "w-5 bg-primary" : "w-1.5 bg-[oklch(0.3_0.01_260)]"
                       }`}
                     />
                   ))}
@@ -369,6 +340,22 @@ function LogoSpinSection() {
             </div>
           );
         })}
+
+        {/* Scroll progress indicator */}
+        <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+          {storyCards.map((_, i) => {
+            const pos = scrollProgress * (cardCount - 1);
+            const isActive = Math.abs(pos - i) < 0.5;
+            return (
+              <div
+                key={i}
+                className={`w-1 rounded-full transition-all duration-300 ${
+                  isActive ? "h-4 bg-primary" : "h-1.5 bg-muted-foreground/20"
+                }`}
+              />
+            );
+          })}
+        </div>
 
         {/* Corner labels */}
         <div className="absolute top-6 left-6 md:left-10">
@@ -394,15 +381,27 @@ export default function LandingPage() {
   }, [initReveal]);
 
   return (
-    <div ref={rootRef} className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div ref={rootRef} className="min-h-screen bg-background text-foreground">
 
       {/* ─── Header ─────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-background/50 border-b border-border/30">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:block hidden" />
-            <Image src="/logo.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:hidden block" />
-            <span className="font-bold text-lg tracking-tight">Nexari</span>
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 shrink-0"
+              style={{
+                background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+                WebkitMaskImage: "url(/logo-white.png)",
+                maskImage: "url(/logo-white.png)",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            />
+            <span className="font-bold text-xl tracking-tight">Nexari</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
@@ -424,10 +423,10 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-8" asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-9" asChild>
               <Link href="/login">Sign In</Link>
             </Button>
-            <Button size="sm" className="h-8 text-[13px]" asChild>
+            <Button size="sm" className="h-9 text-[13px]" asChild>
               <Link href="/login">
                 Get Started
                 <ArrowRight className="ml-1 h-3 w-3" />
@@ -671,8 +670,20 @@ export default function LandingPage() {
       <footer className="border-t border-border/30 py-8">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo-white.png" alt="Nexari" width={18} height={18} className="w-[18px] h-[18px] dark:block hidden opacity-30" />
-            <Image src="/logo.png" alt="Nexari" width={18} height={18} className="w-[18px] h-[18px] dark:hidden block opacity-30" />
+            <div
+              className="w-[18px] h-[18px] shrink-0 opacity-30"
+              style={{
+                background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+                WebkitMaskImage: "url(/logo-white.png)",
+                maskImage: "url(/logo-white.png)",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            />
             <span className="text-[11px] text-muted-foreground/60">Nexari</span>
           </div>
           <p className="text-[11px] text-muted-foreground/50">

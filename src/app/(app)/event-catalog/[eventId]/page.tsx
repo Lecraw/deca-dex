@@ -74,7 +74,7 @@ export default function EventDetailPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/events">
+          <Link href="/event-catalog">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

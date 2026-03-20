@@ -245,7 +245,7 @@ export default function EventsPage() {
                 {isExpanded && (
                   <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {clusterEvents.map((event) => (
-                      <Link key={event.id} href={`/events/${event.id}`}>
+                      <Link key={event.id} href={`/event-catalog/${event.id}`}>
                         <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer bg-background/80">
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between mb-1">
