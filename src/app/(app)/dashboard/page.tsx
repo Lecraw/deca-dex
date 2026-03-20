@@ -102,16 +102,16 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Welcome */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight">
             Welcome back{session?.user?.name ? `, ${session.user.name.split(" ")[0]}` : ""}
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-[13px] mt-0.5">
             Here&apos;s your DECA competition overview
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="shrink-0 self-start sm:self-auto">
           <Link href="/projects/new">
             <Plus className="h-4 w-4 mr-1" />
             New Project

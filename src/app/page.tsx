@@ -186,6 +186,117 @@ function Particles() {
   );
 }
 
+const orbitStats = [
+  { value: "98%", label: "Uptime" },
+  { value: "1.2s", label: "Avg Response" },
+  { value: "4.9/5", label: "User Rating" },
+  { value: "50+", label: "Events Covered" },
+  { value: "GPT-4", label: "AI Engine" },
+  { value: "256-bit", label: "Encryption" },
+];
+
+function LogoSpinSection() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const logoRef = useRef<HTMLImageElement>(null);
+  const [rotation, setRotation] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    obs.observe(section);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    let lastScrollY = window.scrollY;
+    const handleScroll = () => {
+      const delta = window.scrollY - lastScrollY;
+      lastScrollY = window.scrollY;
+      setRotation((prev) => prev + delta * 0.5);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isVisible]);
+
+  return (
+    <div ref={sectionRef} className="max-w-5xl mx-auto px-6 relative z-10">
+      <div className="reveal text-center mb-12">
+        <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Platform</span>
+        <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-3">Built for Performance</h2>
+        <p className="text-muted-foreground mt-4 text-[15px] max-w-md mx-auto">
+          Enterprise-grade infrastructure powering your DECA preparation.
+        </p>
+      </div>
+
+      <div className="relative flex items-center justify-center py-8">
+        {/* Orbit rings */}
+        <div className="absolute w-[280px] h-[280px] md:w-[360px] md:h-[360px] border border-primary/10 rounded-full orbit-ring" />
+        <div className="absolute w-[400px] h-[400px] md:w-[500px] md:h-[500px] border border-primary/5 rounded-full orbit-ring" style={{ animationDelay: "1s" }} />
+
+        {/* Spinning logo */}
+        <div className="relative z-10 flex items-center justify-center w-24 h-24 md:w-28 md:h-28">
+          <div
+            className="w-20 h-20 md:w-24 md:h-24 relative"
+            style={{ transform: `rotate(${rotation}deg)` }}
+          >
+            <Image
+              ref={logoRef}
+              src="/logo-white.png"
+              alt="Nexari"
+              width={96}
+              height={96}
+              className="w-full h-full dark:block hidden drop-shadow-[0_0_20px_oklch(0.50_0.16_255/0.3)]"
+            />
+            <Image
+              src="/logo.png"
+              alt="Nexari"
+              width={96}
+              height={96}
+              className="w-full h-full dark:hidden block drop-shadow-[0_0_20px_oklch(0.50_0.16_255/0.3)]"
+            />
+          </div>
+          {/* Glow behind logo */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle,oklch(0.50_0.16_255/0.15)_0%,transparent_70%)] scale-150" />
+        </div>
+
+        {/* Stat items orbiting around the logo */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {orbitStats.map((stat, i) => {
+            const angle = (i / orbitStats.length) * 360;
+            const radius = typeof window !== 'undefined' && window.innerWidth < 768 ? 155 : 210;
+            const x = Math.cos((angle * Math.PI) / 180) * radius;
+            const y = Math.sin((angle * Math.PI) / 180) * radius;
+
+            return (
+              <div
+                key={stat.label}
+                className="absolute text-center pointer-events-auto"
+                style={{
+                  transform: `translate(${x}px, ${y}px)`,
+                }}
+              >
+                <div className="text-lg md:text-xl font-bold tracking-tight text-foreground">{stat.value}</div>
+                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">{stat.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Page ─────────────────────────────────────── */
 
 export default function LandingPage() {
@@ -388,6 +499,14 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ─── Spinning Logo Stats ────────────── */}
+        <section className="relative py-28 overflow-hidden">
+          <div className="absolute inset-0 grid-bg opacity-15 dark:opacity-30" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,oklch(0.42_0.18_255/0.05)_0%,transparent_50%)] pointer-events-none" />
+
+          <LogoSpinSection />
         </section>
 
         <div className="gradient-line" />

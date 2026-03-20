@@ -310,6 +310,27 @@ html {
   100% { transform: scale(0.8); opacity: 0; }
 }
 
+/* ─── Logo spin on scroll ─────────────────────── */
+@keyframes logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.logo-spin {
+  transition: transform 0.1s linear;
+}
+.logo-spin.spinning {
+  animation: logo-spin 3s linear infinite;
+}
+
+/* ─── Orbit ring ──────────────────────────────── */
+@keyframes orbit-pulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.02); }
+}
+.orbit-ring {
+  animation: orbit-pulse 4s ease-in-out infinite;
+}
+
 /* ─── Number counter glow ─────────────────────── */
 @keyframes number-glow {
   0%, 100% { text-shadow: 0 0 10px oklch(0.50 0.16 255 / 0.15); }
