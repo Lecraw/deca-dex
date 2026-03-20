@@ -190,7 +190,7 @@ const storyCards = [
   { category: "SPEED", title: "1.2s Response", desc: "Lightning-fast AI feedback so you can iterate and improve in real-time." },
   { category: "COMMUNITY", title: "12,400+ Students", desc: "Trusted by DECA competitors across 380+ high schools nationwide." },
   { category: "COVERAGE", title: "50+ Events", desc: "Every DECA competitive event category fully supported and covered." },
-  { category: "AI ENGINE", title: "GPT-4o Powered", desc: "The latest AI models delivering competition-winning insights." },
+  { category: "AI ENGINE", title: "Claude AI Powered", desc: "Anthropic's most capable AI model delivering competition-winning insights." },
   { category: "SECURITY", title: "256-bit Encryption", desc: "Bank-level data security protecting all your project work and ideas." },
 ];
 
