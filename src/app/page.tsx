@@ -186,52 +186,42 @@ function Particles() {
   );
 }
 
-const orbitStats = [
-  { value: "98%", label: "Uptime" },
-  { value: "1.2s", label: "Avg Response" },
-  { value: "4.9/5", label: "User Rating" },
-  { value: "50+", label: "Events Covered" },
-  { value: "GPT-4", label: "AI Engine" },
-  { value: "256-bit", label: "Encryption" },
+const platformStats = [
+  { value: "98%", label: "Uptime", desc: "Enterprise-grade reliability" },
+  { value: "1.2s", label: "Avg Response", desc: "Lightning-fast AI feedback" },
+  { value: "4.9/5", label: "User Rating", desc: "From 12,400+ students" },
+  { value: "50+", label: "Events Covered", desc: "Every DECA category" },
+  { value: "GPT-4o", label: "AI Engine", desc: "Latest model powering insights" },
+  { value: "256-bit", label: "Encryption", desc: "Bank-level data security" },
 ];
 
 function LogoSpinSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const logoRef = useRef<HTMLImageElement>(null);
-  const [rotation, setRotation] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
 
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-    obs.observe(section);
-    return () => obs.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    let lastScrollY = window.scrollY;
     const handleScroll = () => {
-      const delta = window.scrollY - lastScrollY;
-      lastScrollY = window.scrollY;
-      setRotation((prev) => prev + delta * 0.5);
+      const rect = section.getBoundingClientRect();
+      const windowH = window.innerHeight;
+      // 0 when section top enters viewport bottom, 1 when section bottom leaves viewport top
+      const progress = Math.max(0, Math.min(1, (windowH - rect.top) / (windowH + rect.height)));
+      setScrollProgress(progress);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isVisible]);
+  }, []);
+
+  // Map scroll progress to rotation (0 → 720 degrees = 2 full spins)
+  const rotY = scrollProgress * 720;
 
   return (
-    <div ref={sectionRef} className="max-w-5xl mx-auto px-6 relative z-10">
-      <div className="reveal text-center mb-12">
+    <div ref={sectionRef} className="max-w-6xl mx-auto px-6 relative z-10">
+      <div className="reveal text-center mb-16">
         <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Platform</span>
         <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-3">Built for Performance</h2>
         <p className="text-muted-foreground mt-4 text-[15px] max-w-md mx-auto">
@@ -239,58 +229,81 @@ function LogoSpinSection() {
         </p>
       </div>
 
-      <div className="relative flex items-center justify-center py-8">
-        {/* Orbit rings */}
-        <div className="absolute w-[280px] h-[280px] md:w-[360px] md:h-[360px] border border-primary/10 rounded-full orbit-ring" />
-        <div className="absolute w-[400px] h-[400px] md:w-[500px] md:h-[500px] border border-primary/5 rounded-full orbit-ring" style={{ animationDelay: "1s" }} />
+      {/* 3D Logo + Stats Grid layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 items-center">
 
-        {/* Spinning logo */}
-        <div className="relative z-10 flex items-center justify-center w-24 h-24 md:w-28 md:h-28">
+        {/* Left stats */}
+        <div className="space-y-4 order-2 lg:order-1">
+          {platformStats.slice(0, 3).map((stat, i) => (
+            <div
+              key={stat.label}
+              className="reveal group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-all duration-500"
+              style={{ transitionDelay: `${i * 100}ms` }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="flex items-baseline gap-3">
+                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
+                <span className="text-[11px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
+              </div>
+              <p className="text-[12px] text-muted-foreground mt-1">{stat.desc}</p>
+              <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+              <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+            </div>
+          ))}
+        </div>
+
+        {/* Center — 3D spinning logo */}
+        <div className="relative flex items-center justify-center order-1 lg:order-2 py-8 lg:py-0" style={{ perspective: "800px" }}>
+          {/* Orbit rings */}
+          <div className="absolute w-[200px] h-[200px] md:w-[260px] md:h-[260px] border border-primary/10 rounded-full orbit-ring" />
+          <div className="absolute w-[300px] h-[300px] md:w-[380px] md:h-[380px] border border-primary/5 rounded-full orbit-ring" style={{ animationDelay: "1.5s" }} />
+
+          {/* 3D rotating logo */}
           <div
-            className="w-20 h-20 md:w-24 md:h-24 relative"
-            style={{ transform: `rotate(${rotation}deg)` }}
+            className="relative z-10 w-28 h-28 md:w-36 md:h-36 transition-none"
+            style={{
+              transform: `rotateY(${rotY}deg) rotateX(${Math.sin(scrollProgress * Math.PI * 2) * 15}deg)`,
+              transformStyle: "preserve-3d",
+            }}
           >
             <Image
-              ref={logoRef}
               src="/logo-white.png"
               alt="Nexari"
-              width={96}
-              height={96}
-              className="w-full h-full dark:block hidden drop-shadow-[0_0_20px_oklch(0.50_0.16_255/0.3)]"
+              width={144}
+              height={144}
+              className="w-full h-full dark:block hidden drop-shadow-[0_0_30px_oklch(0.50_0.16_255/0.4)]"
             />
             <Image
               src="/logo.png"
               alt="Nexari"
-              width={96}
-              height={96}
-              className="w-full h-full dark:hidden block drop-shadow-[0_0_20px_oklch(0.50_0.16_255/0.3)]"
+              width={144}
+              height={144}
+              className="w-full h-full dark:hidden block drop-shadow-[0_0_30px_oklch(0.50_0.16_255/0.4)]"
             />
           </div>
-          {/* Glow behind logo */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle,oklch(0.50_0.16_255/0.15)_0%,transparent_70%)] scale-150" />
+
+          {/* Glow */}
+          <div className="absolute w-40 h-40 md:w-52 md:h-52 bg-[radial-gradient(circle,oklch(0.50_0.16_255/0.12)_0%,transparent_70%)] pointer-events-none" />
         </div>
 
-        {/* Stat items orbiting around the logo */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {orbitStats.map((stat, i) => {
-            const angle = (i / orbitStats.length) * 360;
-            const radius = typeof window !== 'undefined' && window.innerWidth < 768 ? 155 : 210;
-            const x = Math.cos((angle * Math.PI) / 180) * radius;
-            const y = Math.sin((angle * Math.PI) / 180) * radius;
-
-            return (
-              <div
-                key={stat.label}
-                className="absolute text-center pointer-events-auto"
-                style={{
-                  transform: `translate(${x}px, ${y}px)`,
-                }}
-              >
-                <div className="text-lg md:text-xl font-bold tracking-tight text-foreground">{stat.value}</div>
-                <div className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-[0.15em] mt-0.5">{stat.label}</div>
+        {/* Right stats */}
+        <div className="space-y-4 order-3">
+          {platformStats.slice(3, 6).map((stat, i) => (
+            <div
+              key={stat.label}
+              className="reveal group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-all duration-500"
+              style={{ transitionDelay: `${(i + 3) * 100}ms` }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="flex items-baseline gap-3">
+                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
+                <span className="text-[11px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
               </div>
-            );
-          })}
+              <p className="text-[12px] text-muted-foreground mt-1">{stat.desc}</p>
+              <div className="absolute top-1 right-1 w-2 h-2 border-t border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+              <div className="absolute bottom-1 left-1 w-2 h-2 border-b border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -314,10 +327,10 @@ export default function LandingPage() {
       {/* ─── Header ─────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-background/50 border-b border-border/30">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-white.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:block hidden" />
-            <Image src="/logo.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:hidden block" />
-            <span className="font-bold text-[15px] tracking-tight">Nexari</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:block hidden" />
+            <Image src="/logo.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:hidden block" />
+            <span className="font-bold text-lg tracking-tight">Nexari</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
@@ -374,7 +387,7 @@ export default function LandingPage() {
             </div>
 
             {/* Heading */}
-            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-[-0.04em] leading-[0.88] max-w-5xl mx-auto">
+            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-[-0.04em] leading-[1.05] max-w-5xl mx-auto">
               Your Gateway to{" "}
               <span className="text-primary text-glow">Winning</span>{" "}
               at DECA
