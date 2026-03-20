@@ -266,34 +266,34 @@ function LogoSpinSection() {
         <div className="absolute left-1/2 top-[8%] bottom-[8%] w-px bg-gradient-to-b from-transparent via-primary/10 to-transparent pointer-events-none" />
 
         {/* Center logo — stays locked in place */}
-        <div className="relative z-10" style={{ perspective: "1000px" }}>
+        <div className="relative z-10" style={{ perspective: "1200px" }}>
           {/* Orbit rings */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] border border-primary/8 rounded-full orbit-ring" />
+            <div className="w-[240px] h-[240px] md:w-[320px] md:h-[320px] lg:w-[360px] lg:h-[360px] border border-primary/8 rounded-full orbit-ring" />
           </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[260px] h-[260px] md:w-[320px] md:h-[320px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
+            <div className="w-[380px] h-[380px] md:w-[500px] md:h-[500px] lg:w-[560px] lg:h-[560px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
           </div>
 
           {/* Spinning blue logo */}
           <div
-            className="w-20 h-20 md:w-28 md:h-28"
+            className="w-28 h-28 md:w-40 md:h-40 lg:w-48 lg:h-48"
             style={{
               transform: `rotateY(${rotY}deg)`,
               transformStyle: "preserve-3d",
-              filter: "drop-shadow(0 0 25px oklch(0.50 0.16 255 / 0.35)) drop-shadow(0 0 50px oklch(0.45 0.16 255 / 0.15))",
+              filter: "drop-shadow(0 0 35px oklch(0.50 0.16 255 / 0.4)) drop-shadow(0 0 70px oklch(0.45 0.16 255 / 0.2))",
             }}
           >
-            <div className="absolute inset-0" style={{ transform: "translateZ(3px)", backfaceVisibility: "hidden" }}>
+            <div className="absolute inset-0" style={{ transform: "translateZ(4px)", backfaceVisibility: "hidden" }}>
               <div className="w-full h-full" style={logoMaskStyle} />
             </div>
-            <div className="absolute inset-0" style={{ transform: "translateZ(-3px) rotateY(180deg)", backfaceVisibility: "hidden" }}>
+            <div className="absolute inset-0" style={{ transform: "translateZ(-4px) rotateY(180deg)", backfaceVisibility: "hidden" }}>
               <div className="w-full h-full opacity-75" style={logoMaskStyle} />
             </div>
           </div>
 
           {/* Ambient glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 md:w-56 md:h-56 bg-[radial-gradient(circle,oklch(0.40_0.16_255/0.10)_0%,transparent_60%)] pointer-events-none blur-sm" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 md:w-80 md:h-80 bg-[radial-gradient(circle,oklch(0.40_0.16_255/0.12)_0%,transparent_60%)] pointer-events-none blur-sm" />
         </div>
 
         {/* Cards — one at a time, alternating sides */}
@@ -303,7 +303,7 @@ function LogoSpinSection() {
           return (
             <div
               key={card.category}
-              className={`absolute ${side === "left" ? "left-[4%] md:left-[8%]" : "right-[4%] md:right-[8%]"}`}
+              className={`absolute ${side === "left" ? "left-[3%] md:left-[5%] lg:left-[7%]" : "right-[3%] md:right-[5%] lg:right-[7%]"}`}
               style={{
                 opacity,
                 top: "50%",
@@ -313,25 +313,25 @@ function LogoSpinSection() {
               }}
             >
               <div
-                className={`w-72 md:w-80 p-7 md:p-8 rounded-xl border shadow-2xl ${side === "right" ? "text-right" : ""}`}
+                className={`w-80 md:w-96 lg:w-[420px] p-8 md:p-10 lg:p-12 rounded-xl border shadow-2xl ${side === "right" ? "text-right" : ""}`}
                 style={{
                   background: "oklch(0.14 0.015 260)",
                   borderColor: "oklch(0.25 0.02 260)",
                   boxShadow: `0 8px 32px oklch(0 0 0 / 0.4), 0 0 0 1px oklch(0.25 0.02 260 / 0.5), 0 0 ${20 * opacity}px oklch(0.50 0.16 255 / ${0.06 * opacity})`,
                 }}
               >
-                <span className="text-primary text-[11px] font-mono uppercase tracking-[0.18em]">
+                <span className="text-primary text-[11px] md:text-xs font-mono uppercase tracking-[0.18em]">
                   {String(i + 1).padStart(2, "0")} / {card.category}
                 </span>
-                <h3 className="text-xl md:text-2xl font-bold mt-3 tracking-tight text-white">{card.title}</h3>
-                <p className="text-sm text-[oklch(0.65_0.005_250)] mt-2 leading-relaxed">{card.desc}</p>
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-3 md:mt-4 tracking-tight text-white">{card.title}</h3>
+                <p className="text-sm md:text-base text-[oklch(0.65_0.005_250)] mt-2 md:mt-3 leading-relaxed">{card.desc}</p>
                 {/* Progress dots */}
-                <div className={`flex gap-1.5 mt-5 ${side === "right" ? "justify-end" : ""}`}>
+                <div className={`flex gap-2 mt-6 md:mt-8 ${side === "right" ? "justify-end" : ""}`}>
                   {storyCards.map((_, di) => (
                     <div
                       key={di}
-                      className={`h-1 rounded-full transition-all duration-300 ${
-                        di === i ? "w-5 bg-primary" : "w-1.5 bg-[oklch(0.3_0.01_260)]"
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        di === i ? "w-6 bg-primary" : "w-2 bg-[oklch(0.3_0.01_260)]"
                       }`}
                     />
                   ))}
