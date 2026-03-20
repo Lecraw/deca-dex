@@ -18,66 +18,61 @@ import {
   Target,
 } from "lucide-react";
 import Image from "next/image";
-import { motion, useScroll, useTransform, useInView, useMotionValue, useSpring } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
+
+/* ─── Data ────────────────────────────────────── */
 
 const features = [
   {
     icon: Lightbulb,
     title: "AI Idea Generator",
-    description:
-      "Generate creative business ideas tailored to your DECA event with AI-powered brainstorming.",
-    accent: "from-blue-400 to-indigo-600",
+    description: "Generate creative business ideas tailored to your DECA event with AI-powered brainstorming.",
+    accent: "from-blue-500/80 to-indigo-600/80",
   },
   {
     icon: Presentation,
     title: "Pitch Deck Builder",
-    description:
-      "Create professional pitch decks with drag-and-drop slides, AI suggestions, and auto-formatting.",
-    accent: "from-violet-400 to-purple-600",
+    description: "Create professional pitch decks with drag-and-drop slides, AI suggestions, and auto-formatting.",
+    accent: "from-violet-500/80 to-purple-600/80",
   },
   {
     icon: FileText,
     title: "Report Writer",
-    description:
-      "Build structured written reports with section-by-section guidance and AI writing assistance.",
-    accent: "from-indigo-400 to-blue-600",
+    description: "Build structured written reports with section-by-section guidance and AI writing assistance.",
+    accent: "from-indigo-500/80 to-blue-600/80",
   },
   {
     icon: BarChart3,
     title: "Judge Simulator",
-    description:
-      "Get scored by an AI judge using the official DECA rubric before competition day.",
-    accent: "from-sky-400 to-blue-600",
+    description: "Get scored by an AI judge using the official DECA rubric before competition day.",
+    accent: "from-sky-500/80 to-blue-600/80",
   },
   {
     icon: CheckCircle2,
     title: "Compliance Checker",
-    description:
-      "Automatically verify your project meets all DECA requirements — slide counts, sections, formatting.",
-    accent: "from-blue-300 to-indigo-500",
+    description: "Automatically verify your project meets all DECA requirements — slide counts, sections, formatting.",
+    accent: "from-blue-400/80 to-indigo-500/80",
   },
   {
     icon: Trophy,
     title: "Gamification",
-    description:
-      "Earn XP, unlock badges, and climb the leaderboard as you build your project.",
-    accent: "from-purple-400 to-violet-600",
+    description: "Earn XP, unlock badges, and climb the leaderboard as you build your project.",
+    accent: "from-purple-500/80 to-violet-600/80",
   },
 ];
 
 const steps = [
-  { step: "01", title: "Pick Your Event", desc: "Select from all DECA competitive events" },
-  { step: "02", title: "Generate Ideas", desc: "AI brainstorms business ideas for you" },
-  { step: "03", title: "Build Your Project", desc: "Step-by-step guided creation with AI" },
-  { step: "04", title: "Present & Win", desc: "Export, practice, and compete" },
+  { num: "01", title: "Pick Your Event", desc: "Select from all DECA competitive events" },
+  { num: "02", title: "Generate Ideas", desc: "AI brainstorms business ideas for you" },
+  { num: "03", title: "Build Your Project", desc: "Step-by-step guided creation with AI" },
+  { num: "04", title: "Present & Win", desc: "Export, practice, and compete" },
 ];
 
 const impactStats = [
-  { value: 12400, suffix: "+", label: "Students Helped", icon: Users, description: "across 380+ high schools nationwide" },
-  { value: 87, suffix: "%", label: "Avg Score Improvement", icon: TrendingUp, description: "on judge evaluation rubrics" },
-  { value: 2300, suffix: "+", label: "Projects Built", icon: Target, description: "competition-ready submissions" },
-  { value: 340, suffix: "+", label: "Competition Wins", icon: Award, description: "at district, state, and ICDC levels" },
+  { value: 12400, suffix: "+", label: "Students Helped", icon: Users, sub: "across 380+ high schools" },
+  { value: 87, suffix: "%", label: "Score Improvement", icon: TrendingUp, sub: "on judge rubrics" },
+  { value: 2300, suffix: "+", label: "Projects Built", icon: Target, sub: "competition-ready" },
+  { value: 340, suffix: "+", label: "Competition Wins", icon: Award, sub: "district to ICDC" },
 ];
 
 const marqueeItems = [
@@ -95,142 +90,151 @@ const marqueeItems = [
   "Competition Ready",
 ];
 
-function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
+/* ─── Hooks ───────────────────────────────────── */
+
+function useScrollReveal() {
+  const init = useCallback((root: HTMLElement | null) => {
+    if (!root) return;
+    const els = root.querySelectorAll(".reveal");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("revealed");
+            observer.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+  return init;
 }
 
-function StaggerContainer({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-80px" }}
-      variants={{
-        hidden: {},
-        visible: { transition: { staggerChildren: 0.08 } },
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function StaggerItem({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.div
-      variants={{
-        hidden: { opacity: 0, y: 24 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
+/* ─── Components ──────────────────────────────── */
 
 function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const motionValue = useMotionValue(0);
-  const springValue = useSpring(motionValue, { duration: 2000, bounce: 0 });
-  const [displayValue, setDisplayValue] = useState(0);
+  const [display, setDisplay] = useState(0);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
-    if (isInView) {
-      motionValue.set(value);
-    }
-  }, [isInView, value, motionValue]);
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !done) {
+          setDone(true);
+          const dur = 1800;
+          const start = performance.now();
+          const tick = (now: number) => {
+            const t = Math.min((now - start) / dur, 1);
+            const eased = 1 - Math.pow(1 - t, 4);
+            setDisplay(Math.round(eased * value));
+            if (t < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [value, done]);
 
-  useEffect(() => {
-    const unsubscribe = springValue.on("change", (latest) => {
-      setDisplayValue(Math.round(latest));
-    });
-    return unsubscribe;
-  }, [springValue]);
-
-  return (
-    <span ref={ref}>
-      {displayValue.toLocaleString()}{suffix}
-    </span>
-  );
+  return <span ref={ref} className="stat-number tabular-nums">{display.toLocaleString()}{suffix}</span>;
 }
 
 function Marquee() {
-  const doubled = [...marqueeItems, ...marqueeItems];
+  const items = [...marqueeItems, ...marqueeItems];
   return (
-    <div className="relative overflow-hidden py-5 border-y border-border/50 bg-accent/20">
-      {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10" />
-
+    <div className="relative overflow-hidden py-4 border-y border-border/30">
+      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
       <div className="flex animate-marquee whitespace-nowrap">
-        {doubled.map((item, i) => (
-          <div key={i} className="flex items-center mx-6 shrink-0">
-            <div className="w-1 h-1 bg-primary/50 rounded-full mr-4" />
-            <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
-              {item}
-            </span>
-          </div>
+        {items.map((item, i) => (
+          <span key={i} className="flex items-center mx-8 shrink-0 text-[13px] text-muted-foreground/70 uppercase tracking-[0.18em] font-medium">
+            <span className="w-[3px] h-[3px] bg-primary/40 rotate-45 mr-5 shrink-0" />
+            {item}
+          </span>
         ))}
       </div>
     </div>
   );
 }
 
+function Particles() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+      {Array.from({ length: 20 }).map((_, i) => (
+        <div
+          key={i}
+          className="particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${60 + Math.random() * 40}%`,
+            "--duration": `${6 + Math.random() * 10}s`,
+            "--delay": `${Math.random() * 8}s`,
+            width: `${1 + Math.random() * 2}px`,
+            height: `${1 + Math.random() * 2}px`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ─── Page ─────────────────────────────────────── */
+
 export default function LandingPage() {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.8], [1, 0.96]);
-  const heroY = useTransform(scrollYProgress, [0, 0.8], [0, 60]);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const initReveal = useScrollReveal();
+
+  useEffect(() => {
+    const cleanup = initReveal(rootRef.current);
+    return cleanup;
+  }, [initReveal]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-background/60 border-b border-border/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <div className="flex items-center gap-2.5">
-            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:block hidden" />
-            <Image src="/logo.png" alt="Nexari" width={32} height={32} className="w-8 h-8 dark:hidden block" />
-            <span className="font-bold text-lg tracking-tight">Nexari</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-            <Link href="#features" className="hover:text-foreground transition-colors relative group">
-              Features
-              <span className="absolute -bottom-1 left-0 w-0 h-px bg-primary group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="#how-it-works" className="hover:text-foreground transition-colors relative group">
-              How It Works
-              <span className="absolute -bottom-1 left-0 w-0 h-px bg-primary group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link href="/events" className="hover:text-foreground transition-colors relative group">
-              Events
-              <span className="absolute -bottom-1 left-0 w-0 h-px bg-primary group-hover:w-full transition-all duration-300" />
-            </Link>
+    <div ref={rootRef} className="min-h-screen bg-background text-foreground overflow-x-hidden">
+
+      {/* ─── Header ─────────────────────────── */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-background/50 border-b border-border/30">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo-white.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:block hidden" />
+            <Image src="/logo.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:hidden block" />
+            <span className="font-bold text-[15px] tracking-tight">Nexari</span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
+            {[
+              { href: "#features", label: "Features" },
+              { href: "#how-it-works", label: "How It Works" },
+              { href: "#impact", label: "Impact" },
+              { href: "/events", label: "Events" },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="hover:text-foreground transition-colors relative group py-1"
+              >
+                {link.label}
+                <span className="absolute -bottom-0.5 left-0 w-0 h-[1.5px] bg-primary group-hover:w-full transition-all duration-300" />
+              </Link>
+            ))}
           </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
+
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-8" asChild>
               <Link href="/login">Sign In</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" className="h-8 text-[13px]" asChild>
               <Link href="/login">
                 Get Started
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </div>
@@ -238,276 +242,241 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Hero */}
-        <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          {/* Grid background */}
-          <div className="absolute inset-0 grid-bg opacity-50 dark:opacity-100" />
+        {/* ─── Hero ───────────────────────────── */}
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+          {/* Ambient layers */}
+          <div className="absolute inset-0 hero-mesh" />
+          <div className="absolute inset-0 grid-bg opacity-40 dark:opacity-70" />
+          <Particles />
 
-          {/* Radial glow — darker blue */}
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.12)_0%,transparent_60%)] pointer-events-none" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.38_0.18_255/0.08)_0%,transparent_60%)] pointer-events-none" />
+          {/* Scan line effect */}
+          <div className="absolute inset-0 scan-line overflow-hidden pointer-events-none" />
 
-          <motion.div
-            style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-            className="max-w-7xl mx-auto px-6 pt-32 pb-24 text-center relative z-10"
-          >
-            <FadeIn>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-8 text-xs uppercase tracking-[0.15em] text-primary border border-primary/20 bg-primary/5 rounded-sm">
-                <Zap className="h-3 w-3" />
-                AI-Powered DECA Preparation
+          {/* Radial glow */}
+          <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.15)_0%,transparent_65%)] pointer-events-none" />
+
+          <div className="max-w-7xl mx-auto px-6 pt-28 pb-20 text-center relative z-10">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 mb-10 text-[11px] uppercase tracking-[0.2em] text-primary/80 border border-primary/15 bg-primary/5 font-medium">
+              <Zap className="h-3 w-3" />
+              AI-Powered DECA Preparation
+            </div>
+
+            {/* Heading */}
+            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-[-0.04em] leading-[0.88] max-w-5xl mx-auto">
+              Your Gateway to{" "}
+              <span className="text-primary text-glow">Winning</span>{" "}
+              at DECA
+            </h1>
+
+            {/* Subheading */}
+            <p className="text-[15px] md:text-base text-muted-foreground max-w-lg mx-auto mt-8 leading-relaxed">
+              From idea to competition-ready pitch deck. AI mentoring, judge simulation, and compliance checking — all in one platform.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
+              <Button size="lg" className="group h-11 px-7" asChild>
+                <Link href="/login">
+                  Get Started
+                  <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="neon" className="h-11 px-7" asChild>
+                <Link href="/events">Browse Events</Link>
+              </Button>
+            </div>
+
+            {/* Scroll cue */}
+            <div className="mt-24 flex flex-col items-center gap-2 text-muted-foreground/40">
+              <span className="text-[9px] uppercase tracking-[0.25em] font-medium">Scroll</span>
+              <div className="relative w-px h-10">
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/30 to-transparent" />
+                <div className="absolute top-0 w-px h-3 bg-primary/60 animate-bounce" />
               </div>
-            </FadeIn>
-
-            <FadeIn delay={0.1}>
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] max-w-5xl mx-auto">
-                Your Gateway to{" "}
-                <span className="text-primary text-glow">Winning</span>{" "}
-                at DECA
-              </h1>
-            </FadeIn>
-
-            <FadeIn delay={0.2}>
-              <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mt-8 leading-relaxed">
-                From idea to competition-ready pitch deck. AI mentoring, judge simulation, and compliance checking — all in one platform.
-              </p>
-            </FadeIn>
-
-            <FadeIn delay={0.3}>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
-                <Button size="lg" className="group" asChild>
-                  <Link href="/login">
-                    Get Started
-                    <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="neon" asChild>
-                  <Link href="/events">Browse Events</Link>
-                </Button>
-              </div>
-            </FadeIn>
-
-            {/* Scroll indicator */}
-            <FadeIn delay={0.5}>
-              <motion.div
-                className="mt-20 flex flex-col items-center gap-2 text-muted-foreground/50"
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <span className="text-[10px] uppercase tracking-[0.2em]">Scroll</span>
-                <div className="w-px h-8 bg-gradient-to-b from-primary/40 to-transparent" />
-              </motion.div>
-            </FadeIn>
-          </motion.div>
+            </div>
+          </div>
         </section>
 
-        {/* Marquee ticker bar */}
+        {/* ─── Marquee ───────────────────────── */}
         <Marquee />
 
-        {/* Stats */}
+        {/* ─── Quick Stats ───────────────────── */}
         <section className="max-w-7xl mx-auto px-6 py-20">
-          <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+          <div className="reveal-stagger grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-16">
             {[
               { value: "50+", label: "DECA Events" },
               { value: "AI", label: "Powered Feedback" },
               { value: "24/7", label: "Practice Anytime" },
               { value: "Free", label: "To Get Started" },
             ].map((stat) => (
-              <StaggerItem key={stat.label} className="text-center relative">
-                <div className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-                  {stat.value}
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-2 uppercase tracking-[0.15em]">{stat.label}</div>
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-px bg-primary/30" />
-              </StaggerItem>
+              <div key={stat.label} className="reveal text-center">
+                <div className="text-3xl md:text-4xl font-bold tracking-tight">{stat.value}</div>
+                <div className="text-[11px] text-muted-foreground mt-2 uppercase tracking-[0.18em]">{stat.label}</div>
+              </div>
             ))}
-          </StaggerContainer>
+          </div>
         </section>
 
         <div className="gradient-line" />
 
-        {/* Features */}
+        {/* ─── Features ──────────────────────── */}
         <section id="features" className="max-w-7xl mx-auto px-6 py-24">
-          <FadeIn>
-            <div className="mb-16 max-w-2xl">
-              <span className="text-xs font-mono text-primary uppercase tracking-[0.15em]">// Features</span>
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mt-3">
-                Everything You Need
-              </h2>
-              <p className="text-muted-foreground mt-4 text-lg">
-                One platform for every step of your DECA journey.
-              </p>
-            </div>
-          </FadeIn>
+          <div className="reveal mb-16 max-w-2xl">
+            <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Features</span>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-3">Everything You Need</h2>
+            <p className="text-muted-foreground mt-4 text-[15px]">One platform for every step of your DECA journey.</p>
+          </div>
 
-          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border/50">
-            {features.map((feature) => (
-              <StaggerItem key={feature.title}>
-                <div className="group relative bg-background p-8 hover:bg-accent/30 transition-all duration-500 cursor-default h-full">
-                  {/* Top accent line on hover */}
-                  <div className={`absolute top-0 left-0 w-0 h-px bg-gradient-to-r ${feature.accent} group-hover:w-full transition-all duration-500`} />
+          <div className="reveal-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border/30">
+            {features.map((f) => (
+              <div key={f.title} className="reveal group relative bg-background p-8 hover:bg-accent/20 transition-all duration-500 cursor-default h-full">
+                {/* Top scan line */}
+                <div className={`absolute top-0 left-0 w-0 h-px bg-gradient-to-r ${f.accent} group-hover:w-full transition-all duration-700 ease-out`} />
 
-                  <div className={`inline-flex items-center justify-center w-10 h-10 rounded-sm bg-gradient-to-br ${feature.accent} opacity-80 mb-5`}>
-                    <feature.icon className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-base mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
-
-                  {/* Corner accent */}
-                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-primary/0 group-hover:border-primary/30 transition-all duration-500" />
+                <div className={`inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br ${f.accent} mb-5`}>
+                  <f.icon className="h-4 w-4 text-white" />
                 </div>
-              </StaggerItem>
+                <h3 className="font-semibold text-[15px] mb-2">{f.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+
+                {/* Corner brackets on hover */}
+                <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+                <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+              </div>
             ))}
-          </StaggerContainer>
+          </div>
         </section>
 
         <div className="gradient-line" />
 
-        {/* How It Works */}
+        {/* ─── How It Works ──────────────────── */}
         <section id="how-it-works" className="relative py-24 overflow-hidden">
-          <div className="absolute inset-0 grid-bg opacity-30 dark:opacity-60" />
+          <div className="absolute inset-0 grid-bg opacity-20 dark:opacity-40" />
 
           <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <FadeIn>
-              <div className="mb-16 max-w-2xl">
-                <span className="text-xs font-mono text-primary uppercase tracking-[0.15em]">// Process</span>
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mt-3">How It Works</h2>
-                <p className="text-muted-foreground mt-4 text-lg">
-                  Go from zero to competition-ready in four steps.
-                </p>
-              </div>
-            </FadeIn>
+            <div className="reveal mb-16 max-w-2xl">
+              <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Process</span>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-3">How It Works</h2>
+              <p className="text-muted-foreground mt-4 text-[15px]">Go from zero to competition-ready in four steps.</p>
+            </div>
 
             <div className="relative">
               {/* Connecting line */}
-              <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent -translate-y-1/2" />
+              <div className="hidden md:block absolute top-6 left-[6%] right-[6%] h-px bg-gradient-to-r from-primary/10 via-primary/20 to-primary/10" />
 
-              <StaggerContainer className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {steps.map((item, i) => (
-                  <StaggerItem key={item.step}>
-                    <div className="group relative text-center md:text-left">
-                      <div className="inline-flex items-center justify-center w-12 h-12 mb-4 border border-primary/20 bg-background relative">
-                        <span className="text-lg font-mono font-bold text-primary">{item.step}</span>
-                        <div className="absolute -top-px -left-px w-2 h-2 border-t border-l border-primary/50" />
-                        <div className="absolute -bottom-px -right-px w-2 h-2 border-b border-r border-primary/50" />
-                      </div>
-                      <h3 className="font-semibold mb-2">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-
-                      {i < 3 && (
-                        <div className="hidden md:block absolute top-6 -right-3 text-primary/30">
-                          <ChevronRight className="h-4 w-4" />
-                        </div>
-                      )}
+              <div className="reveal-stagger grid grid-cols-1 md:grid-cols-4 gap-8">
+                {steps.map((s, i) => (
+                  <div key={s.num} className="reveal group text-center md:text-left relative">
+                    {/* Step indicator */}
+                    <div className="inline-flex items-center justify-center w-12 h-12 mb-5 border border-primary/20 bg-background relative group-hover:border-primary/40 transition-colors">
+                      <span className="text-base font-mono font-bold text-primary">{s.num}</span>
+                      <div className="absolute -top-px -left-px w-2 h-2 border-t border-l border-primary/40" />
+                      <div className="absolute -bottom-px -right-px w-2 h-2 border-b border-r border-primary/40" />
                     </div>
-                  </StaggerItem>
+
+                    <h3 className="font-semibold text-[15px] mb-1.5">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
+
+                    {i < 3 && (
+                      <div className="hidden md:block absolute top-6 -right-4 text-primary/25">
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
                 ))}
-              </StaggerContainer>
+              </div>
             </div>
           </div>
         </section>
 
         <div className="gradient-line" />
 
-        {/* Impact / Social proof stats */}
-        <section className="relative py-24 overflow-hidden">
-          {/* Background glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.06)_0%,transparent_60%)] pointer-events-none" />
+        {/* ─── Impact Stats ──────────────────── */}
+        <section id="impact" className="relative py-28 overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.06)_0%,transparent_55%)] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <FadeIn>
-              <div className="text-center mb-16">
-                <span className="text-xs font-mono text-primary uppercase tracking-[0.15em]">// Impact</span>
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mt-3">
-                  Trusted by DECA Students Everywhere
-                </h2>
-                <p className="text-muted-foreground mt-4 text-lg max-w-lg mx-auto">
-                  Real results from students who used Nexari to prepare for competition.
-                </p>
-              </div>
-            </FadeIn>
+            <div className="reveal text-center mb-16">
+              <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Impact</span>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-3">
+                Trusted by DECA Students Everywhere
+              </h2>
+              <p className="text-muted-foreground mt-4 text-[15px] max-w-md mx-auto">
+                Real results from students who used Nexari to prepare for competition.
+              </p>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {impactStats.map((stat, i) => (
-                <FadeIn key={stat.label} delay={i * 0.1}>
-                  <div className="group relative p-6 text-center border border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/20 transition-all duration-500">
-                    {/* Top line accent */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="reveal-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-5">
+              {impactStats.map((stat) => (
+                <div key={stat.label} className="reveal group relative p-7 text-center border border-border/30 bg-card/30 backdrop-blur-sm hover:border-primary/15 transition-all duration-500">
+                  {/* Top line on hover */}
+                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                    <div className="inline-flex items-center justify-center w-10 h-10 mb-4 bg-primary/10 rounded-sm">
-                      <stat.icon className="h-5 w-5 text-primary" />
-                    </div>
+                  <stat.icon className="h-5 w-5 text-primary/60 mx-auto mb-3" />
 
-                    <div className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-1">
-                      <AnimatedNumber value={stat.value} suffix={stat.suffix} />
-                    </div>
-                    <div className="text-sm font-medium mb-1">{stat.label}</div>
-                    <div className="text-xs text-muted-foreground">{stat.description}</div>
-
-                    {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/30 transition-all duration-500" />
-                    <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/30 transition-all duration-500" />
+                  <div className="text-3xl md:text-4xl font-bold tracking-tight mb-1">
+                    <AnimatedNumber value={stat.value} suffix={stat.suffix} />
                   </div>
-                </FadeIn>
+                  <div className="text-sm font-medium mb-0.5">{stat.label}</div>
+                  <div className="text-[11px] text-muted-foreground">{stat.sub}</div>
+
+                  {/* Corner brackets */}
+                  <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+                  <div className="absolute bottom-1 right-1 w-2.5 h-2.5 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+                </div>
               ))}
             </div>
 
-            {/* Testimonial-style blurb */}
-            <FadeIn delay={0.3}>
-              <div className="mt-12 text-center">
-                <p className="text-muted-foreground italic max-w-xl mx-auto">
-                  &ldquo;Nexari helped me go from not knowing where to start to winning 1st place at States in my first year competing.&rdquo;
-                </p>
-                <div className="mt-3 text-xs text-muted-foreground/70">
-                  — DECA Chapter President, California
-                </div>
-              </div>
-            </FadeIn>
+            {/* Testimonial */}
+            <div className="reveal mt-14 text-center">
+              <blockquote className="text-muted-foreground italic max-w-lg mx-auto text-[15px] leading-relaxed">
+                &ldquo;Nexari helped me go from not knowing where to start to winning 1st place at States in my first year competing.&rdquo;
+              </blockquote>
+              <cite className="mt-3 block text-[11px] text-muted-foreground/60 not-italic uppercase tracking-wider">
+                DECA Chapter President, California
+              </cite>
+            </div>
           </div>
         </section>
 
-        {/* Second marquee bar */}
+        {/* ─── Marquee 2 ─────────────────────── */}
         <Marquee />
 
-        {/* CTA */}
+        {/* ─── CTA ───────────────────────────── */}
         <section className="relative py-32 overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.08)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.08)_0%,transparent_60%)] pointer-events-none" />
+          <div className="absolute inset-0 grid-bg opacity-15 dark:opacity-30" />
 
           <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-            <FadeIn>
-              <span className="text-xs font-mono text-primary uppercase tracking-[0.15em]">// Get Started</span>
-            </FadeIn>
-            <FadeIn delay={0.1}>
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mt-4">
+            <div className="reveal">
+              <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Get Started</span>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-4">
                 Ready to Win at DECA?
               </h2>
-            </FadeIn>
-            <FadeIn delay={0.2}>
-              <p className="mt-4 text-muted-foreground max-w-md mx-auto text-lg">
+              <p className="mt-4 text-muted-foreground max-w-md mx-auto text-[15px]">
                 Join students across the country using AI to build better projects faster.
               </p>
-            </FadeIn>
-            <FadeIn delay={0.3}>
-              <Button size="lg" className="mt-8 group" asChild>
+              <Button size="lg" className="mt-8 group h-11 px-8" asChild>
                 <Link href="/login">
                   Get Started Free
-                  <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </Button>
-            </FadeIn>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-border/50 py-8">
+      {/* ─── Footer ───────────────────────────── */}
+      <footer className="border-t border-border/30 py-8">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo-white.png" alt="Nexari" width={20} height={20} className="w-5 h-5 dark:block hidden opacity-40" />
-            <Image src="/logo.png" alt="Nexari" width={20} height={20} className="w-5 h-5 dark:hidden block opacity-40" />
-            <span className="text-xs text-muted-foreground">Nexari</span>
+            <Image src="/logo-white.png" alt="Nexari" width={18} height={18} className="w-[18px] h-[18px] dark:block hidden opacity-30" />
+            <Image src="/logo.png" alt="Nexari" width={18} height={18} className="w-[18px] h-[18px] dark:hidden block opacity-30" />
+            <span className="text-[11px] text-muted-foreground/60">Nexari</span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground/50">
             Nexari is not affiliated with DECA Inc.
           </p>
         </div>
