@@ -206,7 +206,6 @@ function LogoSpinSection() {
     const handleScroll = () => {
       const rect = section.getBoundingClientRect();
       const windowH = window.innerHeight;
-      // 0 when section top enters viewport bottom, 1 when section bottom leaves viewport top
       const progress = Math.max(0, Math.min(1, (windowH - rect.top) / (windowH + rect.height)));
       setScrollProgress(progress);
     };
@@ -216,8 +215,19 @@ function LogoSpinSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Map scroll progress to rotation (0 → 720 degrees = 2 full spins)
   const rotY = scrollProgress * 720;
+  // Stats pop in one by one as scroll progresses (between 15% and 75% of scroll)
+  const getStatStyle = (index: number) => {
+    const statStart = 0.15 + index * 0.08;
+    const statEnd = statStart + 0.12;
+    const t = Math.max(0, Math.min(1, (scrollProgress - statStart) / (statEnd - statStart)));
+    const eased = 1 - Math.pow(1 - t, 3);
+    return {
+      opacity: eased,
+      transform: `translateY(${(1 - eased) * 30}px) scale(${0.85 + eased * 0.15})`,
+      transition: "none" as const,
+    };
+  };
 
   return (
     <div ref={sectionRef} className="max-w-6xl mx-auto px-6 relative z-10">
@@ -229,82 +239,104 @@ function LogoSpinSection() {
         </p>
       </div>
 
-      {/* 3D Logo + Stats Grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 items-center">
-
-        {/* Left stats */}
-        <div className="space-y-4 order-2 lg:order-1">
-          {platformStats.slice(0, 3).map((stat, i) => (
-            <div
-              key={stat.label}
-              className="reveal group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-all duration-500"
-              style={{ transitionDelay: `${i * 100}ms` }}
-            >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="flex items-baseline gap-3">
-                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
-                <span className="text-[11px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
-              </div>
-              <p className="text-[12px] text-muted-foreground mt-1">{stat.desc}</p>
-              <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-              <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-            </div>
-          ))}
-        </div>
-
-        {/* Center — 3D spinning logo */}
-        <div className="relative flex items-center justify-center order-1 lg:order-2 py-8 lg:py-0" style={{ perspective: "800px" }}>
+      {/* 3D Logo center piece */}
+      <div className="flex justify-center mb-16" style={{ perspective: "1000px" }}>
+        <div className="relative">
           {/* Orbit rings */}
-          <div className="absolute w-[200px] h-[200px] md:w-[260px] md:h-[260px] border border-primary/10 rounded-full orbit-ring" />
-          <div className="absolute w-[300px] h-[300px] md:w-[380px] md:h-[380px] border border-primary/5 rounded-full orbit-ring" style={{ animationDelay: "1.5s" }} />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[240px] h-[240px] md:w-[320px] md:h-[320px] border border-primary/8 rounded-full orbit-ring" />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[340px] h-[340px] md:w-[440px] md:h-[440px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
+          </div>
 
-          {/* 3D rotating logo */}
+          {/* The 3D logo */}
           <div
-            className="relative z-10 w-28 h-28 md:w-36 md:h-36 transition-none"
+            className="relative z-10 w-44 h-44 md:w-56 md:h-56"
             style={{
-              transform: `rotateY(${rotY}deg) rotateX(${Math.sin(scrollProgress * Math.PI * 2) * 15}deg)`,
+              transform: `rotateY(${rotY}deg) rotateX(${Math.sin(scrollProgress * Math.PI * 3) * 12}deg)`,
               transformStyle: "preserve-3d",
             }}
           >
-            <Image
-              src="/logo-white.png"
-              alt="Nexari"
-              width={144}
-              height={144}
-              className="w-full h-full dark:block hidden drop-shadow-[0_0_30px_oklch(0.50_0.16_255/0.4)]"
-            />
-            <Image
-              src="/logo.png"
-              alt="Nexari"
-              width={144}
-              height={144}
-              className="w-full h-full dark:hidden block drop-shadow-[0_0_30px_oklch(0.50_0.16_255/0.4)]"
+            {/* Dark blue 3D face - front */}
+            <div
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                background: "linear-gradient(145deg, oklch(0.30 0.15 255), oklch(0.15 0.12 260))",
+                boxShadow: "0 0 60px oklch(0.40 0.16 255 / 0.35), inset 0 1px 0 oklch(0.50 0.16 255 / 0.2), inset 0 -2px 0 oklch(0.10 0.10 260 / 0.5)",
+                transform: "translateZ(12px)",
+                backfaceVisibility: "hidden",
+              }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center p-8">
+                <Image
+                  src="/logo-white.png"
+                  alt="Nexari"
+                  width={200}
+                  height={200}
+                  className="w-full h-full object-contain drop-shadow-[0_0_20px_oklch(0.60_0.16_255/0.5)]"
+                />
+              </div>
+              {/* Corner accents */}
+              <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-white/10 rounded-tl-md" />
+              <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-white/10 rounded-br-md" />
+            </div>
+
+            {/* Dark blue 3D face - back */}
+            <div
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                background: "linear-gradient(145deg, oklch(0.25 0.12 260), oklch(0.12 0.10 265))",
+                boxShadow: "0 0 60px oklch(0.40 0.16 255 / 0.2), inset 0 1px 0 oklch(0.40 0.14 255 / 0.15)",
+                transform: "translateZ(-12px) rotateY(180deg)",
+                backfaceVisibility: "hidden",
+              }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center p-8">
+                <Image
+                  src="/logo-white.png"
+                  alt="Nexari"
+                  width={200}
+                  height={200}
+                  className="w-full h-full object-contain opacity-60"
+                />
+              </div>
+            </div>
+
+            {/* 3D edge / thickness */}
+            <div
+              className="absolute top-0 bottom-0 -right-[1px] w-[24px]"
+              style={{
+                background: "linear-gradient(180deg, oklch(0.22 0.12 258), oklch(0.12 0.08 262))",
+                transform: "rotateY(90deg) translateZ(calc(50% - 12px))",
+                transformOrigin: "right center",
+              }}
             />
           </div>
 
-          {/* Glow */}
-          <div className="absolute w-40 h-40 md:w-52 md:h-52 bg-[radial-gradient(circle,oklch(0.50_0.16_255/0.12)_0%,transparent_70%)] pointer-events-none" />
+          {/* Glow underneath */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 md:w-80 md:h-80 bg-[radial-gradient(circle,oklch(0.35_0.16_255/0.2)_0%,transparent_60%)] pointer-events-none blur-sm" />
         </div>
+      </div>
 
-        {/* Right stats */}
-        <div className="space-y-4 order-3">
-          {platformStats.slice(3, 6).map((stat, i) => (
-            <div
-              key={stat.label}
-              className="reveal group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-all duration-500"
-              style={{ transitionDelay: `${(i + 3) * 100}ms` }}
-            >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="flex items-baseline gap-3">
-                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
-                <span className="text-[11px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
-              </div>
-              <p className="text-[12px] text-muted-foreground mt-1">{stat.desc}</p>
-              <div className="absolute top-1 right-1 w-2 h-2 border-t border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-              <div className="absolute bottom-1 left-1 w-2 h-2 border-b border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+      {/* Stats grid — pop in on scroll */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+        {platformStats.map((stat, i) => (
+          <div
+            key={stat.label}
+            className="group relative p-5 md:p-6 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-colors duration-500"
+            style={getStatStyle(i)}
+          >
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{stat.value}</span>
+              <span className="text-[10px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
             </div>
-          ))}
-        </div>
+            <p className="text-[12px] text-muted-foreground mt-1.5">{stat.desc}</p>
+            <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+            <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
+          </div>
+        ))}
       </div>
     </div>
   );
