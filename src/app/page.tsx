@@ -186,27 +186,29 @@ function Particles() {
   );
 }
 
-const platformStats = [
-  { value: "98%", label: "Uptime", desc: "Enterprise-grade reliability" },
-  { value: "1.2s", label: "Avg Response", desc: "Lightning-fast AI feedback" },
-  { value: "4.9/5", label: "User Rating", desc: "From 12,400+ students" },
-  { value: "50+", label: "Events Covered", desc: "Every DECA category" },
-  { value: "GPT-4o", label: "AI Engine", desc: "Latest model powering insights" },
-  { value: "256-bit", label: "Encryption", desc: "Bank-level data security" },
+const storyCards = [
+  { category: "PERFORMANCE", title: "98% Uptime", desc: "Enterprise-grade reliability ensuring your preparation is never interrupted." },
+  { category: "SPEED", title: "1.2s Response", desc: "Lightning-fast AI feedback so you can iterate and improve in real-time." },
+  { category: "COMMUNITY", title: "12,400+ Students", desc: "Trusted by DECA competitors across 380+ high schools nationwide." },
+  { category: "COVERAGE", title: "50+ Events", desc: "Every DECA competitive event category fully supported and covered." },
+  { category: "AI ENGINE", title: "GPT-4o Powered", desc: "The latest AI models delivering competition-winning insights." },
+  { category: "SECURITY", title: "256-bit Encryption", desc: "Bank-level data security protecting all your project work and ideas." },
 ];
 
 function LogoSpinSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const cardCount = storyCards.length;
 
   useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
+    const outer = outerRef.current;
+    if (!outer) return;
 
     const handleScroll = () => {
-      const rect = section.getBoundingClientRect();
-      const windowH = window.innerHeight;
-      const progress = Math.max(0, Math.min(1, (windowH - rect.top) / (windowH + rect.height)));
+      const rect = outer.getBoundingClientRect();
+      const scrollable = outer.offsetHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+      const progress = Math.max(0, Math.min(1, -rect.top / scrollable));
       setScrollProgress(progress);
     };
 
@@ -215,21 +217,42 @@ function LogoSpinSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const rotY = scrollProgress * 720;
+  // Per-card visibility: one card at a time, alternating left/right
+  const getCardStyle = (index: number) => {
+    const segment = 1 / cardCount;
+    const cardStart = index * segment;
+    const cardEnd = (index + 1) * segment;
+    const fadeZone = segment * 0.25;
+    const side: "left" | "right" = index % 2 === 0 ? "left" : "right";
+    const dir = side === "left" ? -1 : 1;
 
-  // Stats slide in from left or right as you scroll
-  const getStatStyle = (index: number, side: "left" | "right") => {
-    const statStart = 0.12 + index * 0.1;
-    const statEnd = statStart + 0.15;
-    const t = Math.max(0, Math.min(1, (scrollProgress - statStart) / (statEnd - statStart)));
-    const eased = 1 - Math.pow(1 - t, 3);
-    const xOffset = side === "left" ? -(1 - eased) * 70 : (1 - eased) * 70;
-    return {
-      opacity: eased,
-      transform: `translateX(${xOffset}px)`,
-      transition: "none" as const,
-    };
+    let opacity = 0;
+    let xOffset = dir * 50;
+
+    if (scrollProgress >= cardStart && scrollProgress < cardEnd) {
+      if (scrollProgress < cardStart + fadeZone) {
+        // Fading in
+        const t = (scrollProgress - cardStart) / fadeZone;
+        const eased = 1 - Math.pow(1 - t, 3);
+        opacity = eased;
+        xOffset = dir * 50 * (1 - eased);
+      } else if (scrollProgress > cardEnd - fadeZone) {
+        // Fading out
+        const t = (cardEnd - scrollProgress) / fadeZone;
+        const eased = 1 - Math.pow(1 - t, 3);
+        opacity = eased;
+        xOffset = dir * 50 * (1 - eased);
+      } else {
+        // Fully visible
+        opacity = 1;
+        xOffset = 0;
+      }
+    }
+
+    return { opacity, xOffset, side };
   };
+
+  const rotY = scrollProgress * 360;
 
   const logoMaskStyle: React.CSSProperties = {
     background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
@@ -244,98 +267,89 @@ function LogoSpinSection() {
   };
 
   return (
-    <div ref={sectionRef} className="max-w-6xl mx-auto px-6 relative z-10">
-      <div className="reveal text-center mb-16">
-        <span className="text-[11px] font-mono text-primary uppercase tracking-[0.2em]">// Platform</span>
-        <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-3">Built for Performance</h2>
-        <p className="text-muted-foreground mt-4 text-[15px] max-w-md mx-auto">
-          Enterprise-grade infrastructure powering your DECA preparation.
-        </p>
-      </div>
+    <div ref={outerRef} style={{ height: `${cardCount * 100}vh` }} className="relative">
+      {/* Sticky viewport — stays pinned while user scrolls through tall container */}
+      <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 grid-bg opacity-15 dark:opacity-30" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,oklch(0.42_0.18_255/0.05)_0%,transparent_50%)] pointer-events-none" />
 
-      {/* 3-column: left stats | spinning blue logo | right stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-6 lg:gap-10 items-center">
+        {/* Vertical center line */}
+        <div className="absolute left-1/2 top-[8%] bottom-[8%] w-px bg-gradient-to-b from-transparent via-primary/10 to-transparent pointer-events-none" />
 
-        {/* Left stats — slide in from left */}
-        <div className="space-y-4 order-2 lg:order-1">
-          {platformStats.slice(0, 3).map((stat, i) => (
-            <div
-              key={stat.label}
-              className="group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-colors duration-500"
-              style={getStatStyle(i, "left")}
-            >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="flex items-baseline gap-3">
-                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
-                <span className="text-[10px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
-              </div>
-              <p className="text-[12px] text-muted-foreground mt-1.5">{stat.desc}</p>
-              <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-              <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-            </div>
-          ))}
-        </div>
-
-        {/* Center — 3D spinning blue logo (no background card) */}
-        <div className="relative flex items-center justify-center order-1 lg:order-2 py-8 lg:py-0" style={{ perspective: "1000px" }}>
+        {/* Center logo — stays locked in place */}
+        <div className="relative z-10" style={{ perspective: "1000px" }}>
           {/* Orbit rings */}
-          <div className="absolute w-[220px] h-[220px] md:w-[280px] md:h-[280px] border border-primary/8 rounded-full orbit-ring" />
-          <div className="absolute w-[320px] h-[320px] md:w-[400px] md:h-[400px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] border border-primary/8 rounded-full orbit-ring" />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[260px] h-[260px] md:w-[320px] md:h-[320px] border border-primary/4 rounded-full orbit-ring" style={{ animationDelay: "2s" }} />
+          </div>
 
-          {/* The spinning logo — icon itself is blue via CSS mask */}
+          {/* Spinning blue logo */}
           <div
-            className="relative z-10 w-40 h-40 md:w-48 md:h-48"
+            className="w-20 h-20 md:w-28 md:h-28"
             style={{
-              transform: `rotateY(${rotY}deg) rotateX(${Math.sin(scrollProgress * Math.PI * 3) * 10}deg)`,
+              transform: `rotateY(${rotY}deg)`,
               transformStyle: "preserve-3d",
-              filter: "drop-shadow(0 0 30px oklch(0.50 0.16 255 / 0.4)) drop-shadow(0 0 60px oklch(0.45 0.16 255 / 0.2))",
+              filter: "drop-shadow(0 0 25px oklch(0.50 0.16 255 / 0.35)) drop-shadow(0 0 50px oklch(0.45 0.16 255 / 0.15))",
             }}
           >
-            {/* Front face — blue logo */}
-            <div
-              className="absolute inset-0"
-              style={{
-                transform: "translateZ(4px)",
-                backfaceVisibility: "hidden",
-              }}
-            >
+            <div className="absolute inset-0" style={{ transform: "translateZ(3px)", backfaceVisibility: "hidden" }}>
               <div className="w-full h-full" style={logoMaskStyle} />
             </div>
-
-            {/* Back face — blue logo */}
-            <div
-              className="absolute inset-0"
-              style={{
-                transform: "translateZ(-4px) rotateY(180deg)",
-                backfaceVisibility: "hidden",
-              }}
-            >
+            <div className="absolute inset-0" style={{ transform: "translateZ(-3px) rotateY(180deg)", backfaceVisibility: "hidden" }}>
               <div className="w-full h-full opacity-75" style={logoMaskStyle} />
             </div>
           </div>
 
           {/* Ambient glow */}
-          <div className="absolute w-48 h-48 md:w-64 md:h-64 bg-[radial-gradient(circle,oklch(0.40_0.16_255/0.12)_0%,transparent_60%)] pointer-events-none blur-sm" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 md:w-56 md:h-56 bg-[radial-gradient(circle,oklch(0.40_0.16_255/0.10)_0%,transparent_60%)] pointer-events-none blur-sm" />
         </div>
 
-        {/* Right stats — slide in from right */}
-        <div className="space-y-4 order-3">
-          {platformStats.slice(3, 6).map((stat, i) => (
+        {/* Cards — one at a time, alternating sides */}
+        {storyCards.map((card, i) => {
+          const { opacity, xOffset, side } = getCardStyle(i);
+          return (
             <div
-              key={stat.label}
-              className="group relative p-5 border border-border/20 bg-card/20 backdrop-blur-sm hover:border-primary/15 transition-colors duration-500"
-              style={getStatStyle(i, "right")}
+              key={card.category}
+              className={`absolute top-1/2 ${side === "left" ? "left-[4%] md:left-[8%]" : "right-[4%] md:right-[8%]"}`}
+              style={{
+                opacity,
+                transform: `translateX(${xOffset}px) translateY(-50%)`,
+                transition: "none",
+                pointerEvents: opacity > 0.5 ? "auto" : "none",
+              }}
             >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-transparent to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="flex items-baseline gap-3">
-                <span className="text-2xl font-bold tracking-tight text-foreground">{stat.value}</span>
-                <span className="text-[10px] font-mono text-primary uppercase tracking-wider">{stat.label}</span>
+              <div className={`w-64 md:w-80 p-6 md:p-8 bg-card/80 dark:bg-card/60 backdrop-blur-xl border border-border/30 rounded-xl shadow-lg ${side === "right" ? "text-right" : ""}`}>
+                <span className="text-primary text-[11px] font-mono uppercase tracking-[0.18em]">
+                  {String(i + 1).padStart(2, "0")} / {card.category}
+                </span>
+                <h3 className="text-xl md:text-2xl font-bold mt-3 tracking-tight">{card.title}</h3>
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{card.desc}</p>
+                {/* Progress dots */}
+                <div className={`flex gap-1.5 mt-5 ${side === "right" ? "justify-end" : ""}`}>
+                  {storyCards.map((_, di) => (
+                    <div
+                      key={di}
+                      className={`h-1 rounded-full transition-all duration-300 ${
+                        di === i ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/20"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
-              <p className="text-[12px] text-muted-foreground mt-1.5">{stat.desc}</p>
-              <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-              <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
             </div>
-          ))}
+          );
+        })}
+
+        {/* Corner labels */}
+        <div className="absolute top-6 left-6 md:left-10">
+          <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.2em]">Scroll to explore</span>
+        </div>
+        <div className="absolute top-6 right-6 md:right-10">
+          <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.2em]">Nexari / Platform</span>
         </div>
       </div>
     </div>
@@ -546,13 +560,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ─── Spinning Logo Stats ────────────── */}
-        <section className="relative py-28 overflow-hidden">
-          <div className="absolute inset-0 grid-bg opacity-15 dark:opacity-30" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,oklch(0.42_0.18_255/0.05)_0%,transparent_50%)] pointer-events-none" />
-
-          <LogoSpinSection />
-        </section>
+        {/* ─── Sticky Logo Story ────────────── */}
+        <LogoSpinSection />
 
         <div className="gradient-line" />
 
