@@ -222,28 +222,54 @@ function LogoSpinSection() {
     const segment = 1 / cardCount;
     const cardStart = index * segment;
     const cardEnd = (index + 1) * segment;
-    const fadeZone = segment * 0.25;
+    const fadeZone = segment * 0.3;
     const side: "left" | "right" = index % 2 === 0 ? "left" : "right";
     const dir = side === "left" ? -1 : 1;
 
     let opacity = 0;
     let xOffset = dir * 50;
 
+    // First card: start fully visible, only fade out
+    if (index === 0) {
+      if (scrollProgress < cardEnd - fadeZone) {
+        opacity = 1;
+        xOffset = 0;
+      } else if (scrollProgress < cardEnd) {
+        const t = (cardEnd - scrollProgress) / fadeZone;
+        const eased = 1 - Math.pow(1 - t, 3);
+        opacity = eased;
+        xOffset = dir * 50 * (1 - eased);
+      }
+      return { opacity, xOffset, side };
+    }
+
+    // Last card: fade in, then stay visible
+    if (index === cardCount - 1) {
+      if (scrollProgress >= cardStart && scrollProgress < cardStart + fadeZone) {
+        const t = (scrollProgress - cardStart) / fadeZone;
+        const eased = 1 - Math.pow(1 - t, 3);
+        opacity = eased;
+        xOffset = dir * 50 * (1 - eased);
+      } else if (scrollProgress >= cardStart + fadeZone) {
+        opacity = 1;
+        xOffset = 0;
+      }
+      return { opacity, xOffset, side };
+    }
+
+    // Middle cards: fade in and fade out
     if (scrollProgress >= cardStart && scrollProgress < cardEnd) {
       if (scrollProgress < cardStart + fadeZone) {
-        // Fading in
         const t = (scrollProgress - cardStart) / fadeZone;
         const eased = 1 - Math.pow(1 - t, 3);
         opacity = eased;
         xOffset = dir * 50 * (1 - eased);
       } else if (scrollProgress > cardEnd - fadeZone) {
-        // Fading out
         const t = (cardEnd - scrollProgress) / fadeZone;
         const eased = 1 - Math.pow(1 - t, 3);
         opacity = eased;
         xOffset = dir * 50 * (1 - eased);
       } else {
-        // Fully visible
         opacity = 1;
         xOffset = 0;
       }
@@ -267,7 +293,7 @@ function LogoSpinSection() {
   };
 
   return (
-    <div ref={outerRef} style={{ height: `${cardCount * 100}vh` }} className="relative">
+    <div ref={outerRef} style={{ height: "350vh" }} className="relative">
       {/* Sticky viewport — stays pinned while user scrolls through tall container */}
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         {/* Background effects */}
