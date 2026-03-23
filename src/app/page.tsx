@@ -142,22 +142,94 @@ export default function LandingPage() {
               </Link>
             </div>
             
-            {/* Minimalist Dashboard Preview Graphic */}
-            <div className="mt-24 w-full max-w-5xl aspect-[16/9] mx-auto skeuo-card p-2 md:p-3 overflow-hidden flex flex-col relative">
-              <div className="w-full h-full rounded-2xl skeuo-inset flex flex-col overflow-hidden relative">
-                <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2 bg-black/10">
-                  <div className="w-3 h-3 rounded-full skeuo-btn-secondary shadow-sm" />
-                  <div className="w-3 h-3 rounded-full skeuo-btn-secondary shadow-sm" />
-                  <div className="w-3 h-3 rounded-full skeuo-btn-secondary shadow-sm" />
+            {/* CSS Laptop Dashboard Mockup */}
+            <div className="mt-24 w-full max-w-5xl mx-auto relative perspective-[1000px]">
+              
+              {/* Laptop Screen */}
+              <div className="relative mx-auto border-[8px] md:border-[12px] border-[#1a1a1a] rounded-t-2xl md:rounded-t-3xl bg-[#0a0a0a] w-[90%] aspect-[16/10] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col z-10">
+                {/* Camera Notch */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 md:w-24 h-4 bg-[#1a1a1a] rounded-b-xl z-50 flex justify-center items-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-900/50 flex justify-center items-center">
+                    <div className="w-0.5 h-0.5 rounded-full bg-blue-400" />
+                  </div>
                 </div>
-                <div className="flex-1 flex items-center justify-center bg-black/5 dark:bg-black/20 noise-bg">
-                  <div className="flex flex-col items-center gap-4 opacity-40">
-                    <Image src="/logo.png" alt="" width={64} height={64} className="w-16 h-16 dark:hidden object-contain grayscale" />
-                    <Image src="/logo-white.png" alt="" width={64} height={64} className="w-16 h-16 hidden dark:block object-contain" />
-                    <span className="text-sm font-semibold tracking-widest text-muted-foreground uppercase drop-shadow-sm">Dashboard Preview</span>
+
+                {/* --- FAKE DASHBOARD HTML --- */}
+                <div className="flex-1 flex bg-background w-full h-full relative">
+                  
+                  {/* Fake Sidebar */}
+                  <div className="w-[20%] border-r border-border/50 bg-background/50 flex flex-col p-3">
+                    <div className="flex items-center gap-2 mb-6 px-2">
+                       <div className="w-5 h-5 rounded bg-primary/20 flex-shrink-0" />
+                       <div className="w-16 h-3 rounded-full bg-foreground/20" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="w-full h-7 rounded-lg skeuo-inset flex items-center px-2 gap-2">
+                         <div className="w-3 h-3 rounded bg-primary" />
+                         <div className="w-12 h-2 rounded-full bg-primary/70" />
+                      </div>
+                      <div className="w-full h-7 rounded-lg flex items-center px-2 gap-2 opacity-50">
+                         <div className="w-3 h-3 rounded bg-muted-foreground" />
+                         <div className="w-14 h-2 rounded-full bg-muted-foreground" />
+                      </div>
+                      <div className="w-full h-7 rounded-lg flex items-center px-2 gap-2 opacity-50">
+                         <div className="w-3 h-3 rounded bg-muted-foreground" />
+                         <div className="w-10 h-2 rounded-full bg-muted-foreground" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fake Main Content */}
+                  <div className="flex-1 flex flex-col bg-muted/10">
+                    {/* Fake Topbar */}
+                    <div className="h-10 border-b border-border/50 flex items-center justify-between px-4">
+                      <div className="w-24 h-3 rounded-full bg-foreground/10" />
+                      <div className="flex items-center gap-2">
+                         <div className="w-16 h-4 rounded-full skeuo-inset" />
+                         <div className="w-6 h-6 rounded-full skeuo-card" />
+                      </div>
+                    </div>
+
+                    {/* Fake Content Grid */}
+                    <div className="p-4 flex-1 flex flex-col gap-4">
+                       <div className="grid grid-cols-3 gap-3">
+                          <div className="h-16 rounded-xl skeuo-card p-3 flex flex-col justify-center gap-2">
+                            <div className="w-8 h-2 rounded-full bg-muted-foreground/50" />
+                            <div className="w-12 h-4 rounded-full bg-foreground" />
+                          </div>
+                          <div className="h-16 rounded-xl skeuo-card p-3 flex flex-col justify-center gap-2">
+                            <div className="w-8 h-2 rounded-full bg-muted-foreground/50" />
+                            <div className="w-16 h-4 rounded-full bg-foreground" />
+                          </div>
+                          <div className="h-16 rounded-xl skeuo-card p-3 flex flex-col justify-center gap-2">
+                            <div className="w-8 h-2 rounded-full bg-muted-foreground/50" />
+                            <div className="w-10 h-4 rounded-full bg-foreground" />
+                          </div>
+                       </div>
+                       
+                       <div className="flex-1 rounded-xl skeuo-inset p-4 flex flex-col gap-3 relative overflow-hidden">
+                          <div className="w-24 h-3 rounded-full bg-foreground/20" />
+                          <div className="flex-1 flex items-end gap-2 mt-2">
+                             <div className="w-full bg-primary/40 rounded-t-sm h-[40%]" />
+                             <div className="w-full bg-primary/60 rounded-t-sm h-[70%]" />
+                             <div className="w-full bg-primary/30 rounded-t-sm h-[30%]" />
+                             <div className="w-full bg-primary/80 rounded-t-sm h-[90%]" />
+                             <div className="w-full bg-primary rounded-t-sm h-[100%]" />
+                             <div className="w-full bg-primary/50 rounded-t-sm h-[60%]" />
+                          </div>
+                       </div>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Laptop Base */}
+              <div className="relative mx-auto w-full h-4 md:h-6 bg-gradient-to-b from-[#b3b3b3] to-[#8c8c8c] dark:from-[#3a3a3a] dark:to-[#1a1a1a] rounded-b-2xl md:rounded-b-3xl shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex justify-center z-20">
+                <div className="w-24 md:w-32 h-1.5 md:h-2 bg-[#8c8c8c] dark:bg-[#111] rounded-b-lg md:rounded-b-xl" />
+              </div>
+
+              {/* Laptop Lip Reflection */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[90%] h-20 bg-gradient-to-b from-black/20 to-transparent blur-xl pointer-events-none" />
             </div>
           </div>
         </section>
