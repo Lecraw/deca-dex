@@ -92,4 +92,4 @@ def process_image(input_path, out_dark, out_light):
     print(f"Saved {out_light} with enhanced alpha mask")
 
 if __name__ == "__main__":
-    process_image("ddLOGO++neck.png", "public/logo.png", "public/logo-white.png")
+    process_image("DECA-DEXLOGO.png", "public/logo.png", "public/logo-white.png")
