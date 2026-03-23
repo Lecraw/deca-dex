@@ -5,9 +5,8 @@ import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle, AlertTriangle, XCircle, Loader2, ShieldOff } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, CheckCircle, AlertTriangle, XCircle, Loader2, ShieldOff, ShieldCheck } from "lucide-react";
 
 export default function CompliancePage() {
   const params = useParams();
@@ -121,18 +120,30 @@ export default function CompliancePage() {
 
       {compliance && (
         <>
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-5xl font-bold">
-                {compliance.score}
-                <span className="text-2xl text-muted-foreground">/100</span>
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">DECA Readiness Score</p>
-            </CardHeader>
-            <CardContent>
-              <Progress value={compliance.score} className="h-3" />
-            </CardContent>
-          </Card>
+          {(() => {
+            const checks = compliance.checks || [];
+            const failedCount = checks.filter((c: any) => !c.passed && !overriddenChecks.has(c.name)).length;
+            const allCompliant = failedCount === 0;
+            return (
+              <Card className={allCompliant ? "border-green-500/50 bg-green-50 dark:bg-green-950/20" : "border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20"}>
+                <CardContent className="p-6 flex items-center gap-4">
+                  {allCompliant ? (
+                    <ShieldCheck className="h-10 w-10 text-green-500 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="h-10 w-10 text-yellow-500 shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {allCompliant ? "All Guidelines Met" : `${failedCount} check${failedCount > 1 ? "s" : ""} need${failedCount === 1 ? "s" : ""} attention`}
+                    </p>
+                    {compliance.summary && (
+                      <p className="text-sm text-muted-foreground mt-1">{compliance.summary}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {overriddenChecks.size > 0 && (
             <p className="text-xs text-muted-foreground text-center">

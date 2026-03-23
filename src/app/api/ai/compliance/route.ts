@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionOrToken } from "@/lib/auth-token";
 import { prisma } from "@/lib/prisma";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getSessionOrToken(req);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -95,42 +94,33 @@ ${eventSections.map((s: any) => `- ${s.title}: ${s.description || ""}`).join("\n
 Event guidelines:
 ${guidelinesText}
 
-Rubric categories:
-${eventRubric.map((r: any) => `- ${r.name} (${r.maxPoints} pts): ${r.description}`).join("\n")}
-
-Analyze the student's project. Remember these are high school students — be encouraging and constructive. Only mark a check as FAILED for genuine issues, not stylistic preferences or minor wording nitpicks.
+Your job is to check whether the project COMPLIES with the DECA guidelines — NOT to grade or score it. This is a pass/fail checklist, not a rubric evaluation. The judge simulator handles scoring separately.
 
 Check for:
-1. Whether required sections are present (pass if they exist with any reasonable content)
+1. Whether required sections are present
 2. Slide/page count compliance (IMPORTANT: do NOT count supplemental pages like Statement of Assurances, Academic Integrity forms, cover pages, or appendix pages toward the slide limit)
-3. Major structural issues (only fail for truly missing critical elements)
+3. Formatting requirements (page limits, structure)
 4. Content alignment with event requirements
 
-Mark a check as PASSED if the student made a reasonable attempt. Use "warning" severity for suggestions and improvements — reserve "error" only for hard rule violations (wrong page count, missing required sections entirely).
+Each check is either COMPLIANT (passed: true) or NOT COMPLIANT (passed: false). Use "warning" severity for minor guideline deviations and "error" for clear violations (exceeding page/slide limits, missing required sections entirely).
 
 Return your analysis as JSON with this exact structure:
 {
-  "score": <number 0-100 representing overall DECA readiness>,
+  "allCompliant": true/false,
   "checks": [
     {
       "name": "Check name",
       "passed": true/false,
       "severity": "info" | "warning" | "error",
-      "message": "Specific feedback about this check"
+      "message": "What is compliant or what needs to change"
     }
   ],
-  "summary": "2-3 sentence encouraging overall assessment"
+  "summary": "2-3 sentence overall compliance assessment"
 }
 
-Include 8-12 checks. Most checks should PASS for a project with reasonable effort.
+Do NOT include a numeric score. Include 8-12 checks. Set "allCompliant" to true only if every check passes.
 
-SCORING GUIDE:
-- A project with all sections present and decent content: 80-95
-- A project with minor gaps or areas to improve: 65-80
-- A project missing multiple required sections: 45-65
-- Only score below 45 if the project is fundamentally incomplete
-
-Be generous with the score — the goal is to motivate students, not discourage them. Frame the summary positively.${overrides.length > 0 ? `\n\nIMPORTANT: The student has overridden the following checks (they believe these are not applicable or they've handled them outside this project). Still include these checks in your response, but mark them as PASSED:\n${overrides.join("\n")}` : ""}`;
+Be encouraging — these are high school students. Frame non-compliant items as specific things to fix, not failures.${overrides.length > 0 ? `\n\nIMPORTANT: The student has overridden the following checks (they believe these are not applicable or they've handled them outside this project). Still include these checks in your response, but mark them as PASSED:\n${overrides.join("\n")}` : ""}`;
 
   const userId = session.user.id;
 
@@ -175,21 +165,21 @@ Be generous with the score — the goal is to motivate students, not discourage 
           return;
         }
 
-        const score = Math.max(0, Math.min(100, Math.round(result.score)));
         const checks = result.checks || [];
+        const allCompliant = checks.length > 0 && checks.every((c: any) => c.passed);
 
         await prisma.project.update({
           where: { id: projectId },
           data: {
-            complianceJson: JSON.stringify({ score, checks, summary: result.summary, overrides }),
-            readinessScore: score,
+            complianceJson: JSON.stringify({ allCompliant, checks, summary: result.summary, overrides }),
+            readinessScore: null,
           },
         });
 
         await awardXp(userId, "RUN_COMPLIANCE", { projectId });
         await checkAndAwardBadges(userId);
 
-        controller.enqueue(encoder.encode(JSON.stringify({ score, maxScore: 100, checks, summary: result.summary, overrides })));
+        controller.enqueue(encoder.encode(JSON.stringify({ allCompliant, checks, summary: result.summary, overrides })));
         controller.close();
       } catch (err: any) {
         controller.enqueue(encoder.encode(JSON.stringify({ error: `API error: ${err.message}` })));

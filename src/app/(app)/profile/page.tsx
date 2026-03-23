@@ -1,11 +1,13 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sparkles,
   Trophy,
@@ -24,7 +26,13 @@ import {
   Zap,
   Crown,
   Clock,
+  Key,
+  Copy,
+  Trash2,
+  Loader2,
+  Plus,
 } from "lucide-react";
+import { useState } from "react";
 
 const badgeIcons: Record<string, any> = {
   lightbulb: Lightbulb,
@@ -178,6 +186,155 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* API Tokens */}
+      <ApiTokensSection />
     </div>
+  );
+}
+
+function ApiTokensSection() {
+  const queryClient = useQueryClient();
+  const [newTokenName, setNewTokenName] = useState("Browser Extension");
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const { data: tokens = [] } = useQuery({
+    queryKey: ["api-tokens"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/extension-token");
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const createToken = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/auth/extension-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTokenName }),
+      });
+      if (!res.ok) throw new Error("Failed to create token");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedToken(data.token);
+      queryClient.invalidateQueries({ queryKey: ["api-tokens"] });
+    },
+  });
+
+  const deleteToken = useMutation({
+    mutationFn: async (tokenId: string) => {
+      await fetch(`/api/auth/extension-token?id=${tokenId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["api-tokens"] });
+    },
+  });
+
+  const copyToken = () => {
+    if (generatedToken) {
+      navigator.clipboard.writeText(generatedToken);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Key className="h-4 w-4 text-primary" /> API Tokens
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Generate tokens for the Nexari browser extension
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Generated token display */}
+        {generatedToken && (
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+            <p className="text-xs font-medium text-primary">
+              Token generated — copy it now, it won't be shown again
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-muted p-2 rounded font-mono break-all">
+                {generatedToken}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyToken}
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Create new token */}
+        <div className="flex items-center gap-2">
+          <Input
+            value={newTokenName}
+            onChange={(e) => setNewTokenName(e.target.value)}
+            placeholder="Token name"
+            className="text-sm"
+          />
+          <Button
+            size="sm"
+            onClick={() => createToken.mutate()}
+            disabled={createToken.isPending || !newTokenName.trim()}
+          >
+            {createToken.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-1" /> Generate
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Token list */}
+        {tokens.length > 0 && (
+          <div className="space-y-2">
+            {tokens.map((token: any) => (
+              <div
+                key={token.id}
+                className="flex items-center justify-between p-3 rounded-lg border text-sm"
+              >
+                <div>
+                  <p className="font-medium">{token.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Created{" "}
+                    {new Date(token.createdAt).toLocaleDateString()}
+                    {token.lastUsedAt &&
+                      ` · Last used ${new Date(token.lastUsedAt).toLocaleDateString()}`}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteToken.mutate(token.id)}
+                  disabled={deleteToken.isPending}
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tokens.length === 0 && !generatedToken && (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            No tokens yet. Generate one to use with the browser extension.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

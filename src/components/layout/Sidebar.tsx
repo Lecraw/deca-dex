@@ -45,8 +45,8 @@ export function Sidebar() {
       )}>
         {!collapsed && (
           <>
-            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 shrink-0 dark:block hidden" />
-            <Image src="/logo.png" alt="Nexari" width={32} height={32} className="w-8 h-8 shrink-0 dark:hidden block" />
+            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 shrink-0 dark:block hidden object-contain" />
+            <Image src="/logo.png" alt="Nexari" width={32} height={32} className="w-8 h-8 shrink-0 dark:hidden block object-contain" />
             <span className="font-bold text-base tracking-tight">Nexari</span>
           </>
         )}

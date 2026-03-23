@@ -134,7 +134,9 @@ function NewProjectContent() {
           ideaJson: selectedIdea,
         }),
       });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Failed to create project");
+      return data;
     },
     onSuccess: (data) => {
       router.push(`/projects/${data.id}`);
@@ -391,6 +393,12 @@ function NewProjectContent() {
                 <p className="text-sm text-muted-foreground">{selectedIdea.pitch}</p>
               </CardContent>
             </Card>
+          )}
+
+          {createProject.isError && (
+            <p className="text-sm text-red-500 text-center">
+              {(createProject.error as Error).message}
+            </p>
           )}
 
           <div className="flex gap-2">

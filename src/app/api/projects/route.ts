@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrToken } from "@/lib/auth-token";
 import { prisma } from "@/lib/prisma";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
+import { RESEARCH_TEMPLATES } from "@/lib/research-templates";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
+export async function GET(req: NextRequest) {
+  const session = await getSessionOrToken(req);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -17,7 +19,7 @@ export async function GET() {
       event: {
         select: { code: true, name: true, eventType: true },
       },
-      _count: { select: { slides: true, sections: true, feedback: true } },
+      _count: { select: { slides: true, sections: true, research: true, feedback: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -57,30 +59,31 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Auto-create sections/slides based on event type
+  // Auto-create sections based on event type
   const sections = JSON.parse(event.sectionsJson) as any[];
-  if (sections.length > 0) {
-    if (event.eventType === "PITCH_DECK") {
-      await prisma.slide.createMany({
-        data: sections.map((s: any, i: number) => ({
-          projectId: project.id,
-          order: i,
-          title: s.title,
-          contentJson: JSON.stringify({ blocks: [{ type: "text", content: "" }] }),
-        })),
-      });
-    } else if (event.eventType === "WRITTEN_REPORT") {
-      await prisma.reportSection.createMany({
-        data: sections.map((s: any, i: number) => ({
-          projectId: project.id,
-          order: i,
-          title: s.title,
-          bodyHtml: "",
-          sectionType: s.key || s.title.toLowerCase().replace(/\s+/g, "_"),
-        })),
-      });
-    }
+  if (sections.length > 0 && event.eventType === "WRITTEN_REPORT") {
+    await prisma.reportSection.createMany({
+      data: sections.map((s: any, i: number) => ({
+        projectId: project.id,
+        order: i,
+        title: s.title,
+        bodyHtml: "",
+        sectionType: s.key || s.title.toLowerCase().replace(/\s+/g, "_"),
+      })),
+    });
   }
+
+  // Auto-create research documents for all project types
+  await prisma.researchDocument.createMany({
+    data: RESEARCH_TEMPLATES.map((t, i) => ({
+      projectId: project.id,
+      order: i,
+      title: t.title,
+      template: t.key,
+      contentJson: "{}",
+      status: "NOT_STARTED",
+    })),
+  });
 
   // Award XP for creating project
   await awardXp(session.user.id, "CREATE_PROJECT", { projectId: project.id });

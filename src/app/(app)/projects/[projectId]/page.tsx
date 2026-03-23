@@ -6,12 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
-  Presentation,
   FileText,
   MessageSquare,
   CheckCircle,
@@ -25,6 +23,9 @@ import {
   X,
   Pencil,
   Check,
+  Search,
+  Calendar,
+  ArrowRight,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -124,6 +125,80 @@ export default function ProjectDetailPage() {
   const isPitchDeck = project.event.eventType === "PITCH_DECK";
   const compliance = project.complianceJson as any;
 
+  const workflowSteps = [
+    {
+      id: "idea",
+      title: "Define Your Business Idea",
+      description: "Brainstorm and select a business concept for your project",
+      link: `/projects/${projectId}/idea`,
+      isComplete: !!project.businessIdea,
+      icon: Sparkles,
+      color: "text-purple-500",
+    },
+    {
+      id: "research",
+      title: "Research Your Topic",
+      description: "Use AI-powered templates to gather market data, competitor info, and more",
+      link: `/projects/${projectId}/research`,
+      isComplete: (project.research || []).some((r: any) => r.status === "COMPLETED"),
+      icon: Search,
+      color: "text-blue-500",
+    },
+    {
+      id: "plan",
+      title: "Create a Plan",
+      description: "Generate a daily schedule with milestones to stay on track",
+      link: `/planner`,
+      isComplete: false,
+      icon: Calendar,
+      color: "text-teal-500",
+    },
+    {
+      id: "build",
+      title: isPitchDeck ? "Build Your Pitch Deck" : "Write Your Report",
+      description: isPitchDeck
+        ? "Create your pitch deck externally, then upload it for review"
+        : "Write each section of your report using the editor",
+      link: isPitchDeck
+        ? `/projects/${projectId}/presentation`
+        : `/projects/${projectId}/report`,
+      isComplete: isPitchDeck
+        ? !!project.uploadedFileName
+        : (project.sections || []).some((s: any) => s.wordCount > 10),
+      icon: FileText,
+      color: "text-green-500",
+    },
+    {
+      id: "feedback",
+      title: "Get AI Feedback",
+      description: "Have AI review your work and suggest improvements",
+      link: `/projects/${projectId}/feedback`,
+      isComplete: (project.feedback || []).length > 0,
+      icon: MessageSquare,
+      color: "text-orange-500",
+    },
+    {
+      id: "compliance",
+      title: "Check Compliance",
+      description: "Verify your project meets all DECA guidelines",
+      link: `/projects/${projectId}/compliance`,
+      isComplete: !!project.complianceJson,
+      icon: CheckCircle,
+      color: "text-green-600",
+    },
+    {
+      id: "judge",
+      title: "Practice with Judge Sim",
+      description: "Get a simulated judge score to see how you'd perform",
+      link: `/projects/${projectId}/judge`,
+      isComplete: (project.scores || []).length > 0,
+      icon: BarChart3,
+      color: "text-red-500",
+    },
+  ];
+
+  const firstIncompleteIndex = workflowSteps.findIndex((s) => !s.isComplete);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -199,8 +274,62 @@ export default function ProjectDetailPage() {
         </Card>
       )}
 
+      {/* Guided Workflow Steps */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Your Project Roadmap</CardTitle>
+          <CardDescription>Follow these steps to build a winning DECA project</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            {workflowSteps.map((step, i) => {
+              const Icon = step.icon;
+              const isCurrent = i === firstIncompleteIndex;
+              return (
+                <Link key={step.id} href={step.link}>
+                  <div
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      isCurrent
+                        ? "bg-primary/5 border border-primary/20"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <div className={`flex items-center justify-center h-7 w-7 rounded-full shrink-0 ${
+                      step.isComplete
+                        ? "bg-green-100 dark:bg-green-950/30"
+                        : isCurrent
+                        ? "bg-primary/10"
+                        : "bg-muted"
+                    }`}>
+                      {step.isComplete ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Icon className={`h-4 w-4 ${isCurrent ? step.color : "text-muted-foreground"}`} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${step.isComplete ? "text-muted-foreground" : ""}`}>
+                        {step.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {step.description}
+                      </p>
+                    </div>
+                    {isCurrent && (
+                      <Badge variant="outline" className="shrink-0 text-xs">
+                        Next <ArrowRight className="h-3 w-3 ml-1" />
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Link href={`/projects/${projectId}/presentation`}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="p-4 flex flex-col items-center text-center gap-2">
@@ -209,20 +338,24 @@ export default function ProjectDetailPage() {
             </CardContent>
           </Card>
         </Link>
-        <Link href={`/projects/${projectId}/${isPitchDeck ? "slides" : "report"}`}>
+        <Link href={`/projects/${projectId}/research`}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-              {isPitchDeck ? (
-                <Presentation className="h-6 w-6 text-blue-500" />
-              ) : (
-                <FileText className="h-6 w-6 text-green-500" />
-              )}
-              <span className="text-xs font-medium">
-                {isPitchDeck ? "Edit Slides" : "Edit Report"}
-              </span>
+              <Search className="h-6 w-6 text-blue-500" />
+              <span className="text-xs font-medium">Research</span>
             </CardContent>
           </Card>
         </Link>
+        {!isPitchDeck && (
+          <Link href={`/projects/${projectId}/report`}>
+            <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+              <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                <FileText className="h-6 w-6 text-green-500" />
+                <span className="text-xs font-medium">Edit Report</span>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
         <Link href={`/projects/${projectId}/idea`}>
           <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
             <CardContent className="p-4 flex flex-col items-center text-center gap-2">
@@ -344,35 +477,29 @@ export default function ProjectDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              {isPitchDeck ? "Slides" : "Report Sections"}
+              {isPitchDeck ? "Research Progress" : "Report Sections"}
             </CardTitle>
             <CardDescription>
               {isPitchDeck
-                ? `${project.slides.length} slides`
+                ? `${(project.research || []).filter((r: any) => r.status === "COMPLETED").length} / ${(project.research || []).length} research completed`
                 : `${project.sections.length} sections`}
-              {project.event.maxSlides && isPitchDeck
-                ? ` / ${project.event.maxSlides} max`
+              {!isPitchDeck && project.event.maxPages
+                ? ` / ${project.event.maxPages} max pages`
                 : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {isPitchDeck
-                ? project.slides.map((slide: any, i: number) => (
-                    <div key={slide.id} className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted">
+                ? (project.research || []).map((doc: any, i: number) => (
+                    <div key={doc.id} className="flex items-center gap-2 text-sm p-2 rounded hover:bg-muted">
                       <span className="text-muted-foreground w-6">{i + 1}</span>
-                      <span className="flex-1">{slide.title}</span>
-                      {(() => {
-                        const content = slide.contentJson as any;
-                        const hasContent = content?.blocks?.some(
-                          (b: any) => b.content && b.content.trim().length > 0
-                        );
-                        return hasContent ? (
-                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                        ) : (
-                          <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
-                        );
-                      })()}
+                      <span className="flex-1">{doc.title}</span>
+                      {doc.status === "COMPLETED" ? (
+                        <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                      ) : (
+                        <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
+                      )}
                     </div>
                   ))
                 : project.sections.map((section: any, i: number) => (
@@ -393,22 +520,34 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Compliance Score */}
+        {/* Compliance Status */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">DECA Readiness</CardTitle>
+            <CardTitle className="text-base">Compliance Status</CardTitle>
             <CardDescription>
-              How well your project meets DECA requirements
+              Does your project meet DECA guidelines?
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {compliance ? (
               <>
-                <div className="text-center">
-                  <span className="text-4xl font-bold">{compliance.score}</span>
-                  <span className="text-2xl text-muted-foreground">/100</span>
-                </div>
-                <Progress value={compliance.score} />
+                {(() => {
+                  const checks = compliance.checks || [];
+                  const failedCount = checks.filter((c: any) => !c.passed).length;
+                  const allCompliant = failedCount === 0;
+                  return (
+                    <div className={`flex items-center gap-3 p-3 rounded-lg ${allCompliant ? "bg-green-50 dark:bg-green-950/20" : "bg-yellow-50 dark:bg-yellow-950/20"}`}>
+                      {allCompliant ? (
+                        <CheckCircle className="h-6 w-6 text-green-500 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="h-6 w-6 text-yellow-500 shrink-0" />
+                      )}
+                      <span className="text-sm font-medium">
+                        {allCompliant ? "All Guidelines Met" : `${failedCount} issue${failedCount > 1 ? "s" : ""} found`}
+                      </span>
+                    </div>
+                  );
+                })()}
                 <div className="space-y-1.5">
                   {[...(compliance.checks || [])].sort((a: any, b: any) => Number(a.passed) - Number(b.passed)).slice(0, 5).map((check: any, i: number) => (
                     <div key={i} className="flex items-center gap-2 text-xs">
@@ -427,7 +566,7 @@ export default function ProjectDetailPage() {
             ) : (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Run a compliance check to see your readiness score
+                  Run a compliance check to verify your project meets DECA guidelines
                 </p>
               </div>
             )}

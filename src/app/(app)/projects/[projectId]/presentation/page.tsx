@@ -556,16 +556,15 @@ export default function PresentationPage() {
           )}
 
           {/* Compliance Results */}
-          {runCompliance.data?.score !== undefined && (
-            <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 max-w-5xl mx-auto w-full">
+          {runCompliance.data?.checks && (
+            <Card className={`max-w-5xl mx-auto w-full ${runCompliance.data.allCompliant ? "border-green-200 bg-green-50 dark:bg-green-950/20" : "border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20"}`}>
               <CardContent className="p-4">
                 <p className="text-xs font-medium mb-2">Compliance Check</p>
-                <div className="text-center mb-3">
-                  <span className="text-3xl font-bold">
-                    {runCompliance.data.score}
-                  </span>
-                  <span className="text-xl text-muted-foreground">/100</span>
-                </div>
+                <p className="text-lg font-semibold mb-2">
+                  {runCompliance.data.allCompliant
+                    ? "All Guidelines Met"
+                    : `${runCompliance.data.checks.filter((c: any) => !c.passed).length} issue(s) found`}
+                </p>
                 <p className="text-sm">{runCompliance.data.summary}</p>
               </CardContent>
             </Card>

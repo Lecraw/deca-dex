@@ -106,12 +106,12 @@ function LoginContent() {
 
         {/* Watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.02]" />
+          <Image src="/logo-white.png" alt="" width={600} height={600} className="w-[500px] h-[500px] opacity-[0.02] object-contain" />
         </div>
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8" />
+            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 object-contain" />
             <span className="font-bold text-lg tracking-tight">Nexari</span>
           </div>
 
@@ -151,8 +151,8 @@ function LoginContent() {
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden" />
-            <Image src="/logo.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:hidden block" />
+            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden object-contain" />
+            <Image src="/logo.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:hidden block object-contain" />
             <span className="font-bold text-xl">Nexari</span>
           </div>
 

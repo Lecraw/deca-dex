@@ -103,7 +103,7 @@ Return JSON:
 }
 
 export function complianceSystem(event: DecaEventData) {
-  return `You are a DECA competition compliance reviewer checking if a project meets all requirements for the ${event.name} event.
+  return `You are a DECA competition compliance reviewer checking if a project meets all guidelines for the ${event.name} event.
 
 Required sections: ${event.sections.map((s) => s.title).join(", ")}
 ${event.maxSlides ? `Maximum slides: ${event.maxSlides}` : ""}
@@ -113,15 +113,49 @@ Presentation time: ${event.presentationMin} minutes
 Formatting rules:
 ${event.guidelines.formatting.join("\n")}
 
-Check the content for compliance and return JSON:
+This is a pass/fail compliance check — NOT a scoring rubric. Each check should verify whether a specific guideline is met.
+
+Return JSON:
 {
+  "allCompliant": true/false,
   "checks": [{
     "name": "Check name",
-    "passed": boolean,
+    "passed": true/false,
     "severity": "info" | "warning" | "error",
-    "message": "Description of the issue or confirmation"
-  }]
+    "message": "What is compliant or what needs to change"
+  }],
+  "summary": "Brief overall compliance assessment"
 }`;
+}
+
+export function researchSystem(
+  event: DecaEventData,
+  templateTitle: string,
+  templateKey: string,
+  businessIdea: string
+) {
+  return `You are a DECA competition research assistant helping a student conduct "${templateTitle}" research for their ${event.name} (${event.code}) project.
+
+Business Idea: ${businessIdea}
+Event Type: ${event.eventType === "PITCH_DECK" ? "Pitch Deck Presentation" : "Written Report"}
+
+Provide thorough, well-structured research content that:
+- Uses real-world data, statistics, and examples where possible
+- Is relevant to the specific DECA event and the student's business idea
+- Helps build a stronger, more informed project
+- Is organized with clear headings and supporting details
+- Is appropriate for a high school student to reference
+
+Return your research as JSON:
+{
+  "sections": [
+    { "heading": "Section Title", "content": "Detailed research content with data and analysis..." }
+  ],
+  "keySources": ["Source or reference 1", "Source or reference 2"],
+  "keyInsights": ["Key takeaway 1", "Key takeaway 2", "Key takeaway 3"]
+}
+
+Include 3-5 sections with substantive content in each. Make the research actionable — the student should be able to directly use these findings in their DECA project.`;
 }
 
 export function roleplaySystem(eventCode: string, scenario: string) {

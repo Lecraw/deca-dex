@@ -18,6 +18,9 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from "lucide-react";
 
 export default function ReportPage() {
@@ -27,6 +30,7 @@ export default function ReportPage() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [showGuidance, setShowGuidance] = useState(true);
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
@@ -168,6 +172,81 @@ export default function ReportPage() {
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
           {activeSection ? (
             <>
+              {/* Section Guidelines */}
+              {(() => {
+                const eventSections = project?.event?.sectionsJson || [];
+                const sectionInfo = eventSections.find(
+                  (s: any) =>
+                    s.title === activeSection.title ||
+                    s.key === activeSection.sectionType
+                );
+                const guidelines = project?.event?.guidelinesJson;
+                const rubric = project?.event?.rubricJson || [];
+
+                if (!sectionInfo && !guidelines) return null;
+
+                return (
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-4">
+                      <button
+                        className="flex items-center justify-between w-full text-left"
+                        onClick={() => setShowGuidance(!showGuidance)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Info className="h-4 w-4 text-blue-500" />
+                          <span className="text-sm font-medium">
+                            Section Guidelines
+                          </span>
+                        </div>
+                        {showGuidance ? (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                      {showGuidance && (
+                        <div className="mt-3 space-y-3">
+                          {sectionInfo?.description && (
+                            <div>
+                              <p className="text-xs font-medium mb-1">What this section needs:</p>
+                              <p className="text-xs text-muted-foreground">{sectionInfo.description}</p>
+                            </div>
+                          )}
+                          {sectionInfo?.suggestedPages && (
+                            <p className="text-xs text-muted-foreground">
+                              Suggested length: ~{sectionInfo.suggestedPages} page{sectionInfo.suggestedPages > 1 ? "s" : ""}
+                            </p>
+                          )}
+                          {sectionInfo?.required === false && (
+                            <p className="text-xs text-yellow-600">This section is optional.</p>
+                          )}
+                          {guidelines?.formatting && guidelines.formatting.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium mb-1">Formatting:</p>
+                              <ul className="text-xs text-muted-foreground space-y-0.5">
+                                {guidelines.formatting.slice(0, 4).map((f: string, i: number) => (
+                                  <li key={i}>• {f}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {rubric.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium mb-1">What judges look for:</p>
+                              <ul className="text-xs text-muted-foreground space-y-0.5">
+                                {rubric.slice(0, 3).map((r: any, i: number) => (
+                                  <li key={i}>• {r.name} ({r.maxPoints} pts): {r.description}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
               <Card className="flex-1">
                 <CardContent className="p-6 h-full flex flex-col">
                   <Input

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionOrToken } from "@/lib/auth-token";
 import { prisma } from "@/lib/prisma";
 import { judgeSystem } from "@/lib/ai/prompts";
 import { awardXp } from "@/lib/gamification/xp";
@@ -9,7 +8,7 @@ import type { DecaEventData } from "@/types/deca";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getSessionOrToken(req);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

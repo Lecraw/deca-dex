@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionOrToken } from "@/lib/auth-token";
 import { prisma } from "@/lib/prisma";
 
 function safeJsonParse(value: string | null | undefined) {
@@ -16,7 +15,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await getSessionOrToken(req);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -29,6 +28,7 @@ export async function GET(
       event: true,
       slides: { orderBy: { order: "asc" } },
       sections: { orderBy: { order: "asc" } },
+      research: { orderBy: { order: "asc" } },
       feedback: { orderBy: { createdAt: "desc" }, take: 20 },
       scores: { orderBy: { createdAt: "desc" }, take: 5 },
     },
@@ -50,6 +50,10 @@ export async function GET(
       ...s,
       contentJson: safeJsonParse(s.contentJson),
     })),
+    research: project.research.map((r) => ({
+      ...r,
+      contentJson: safeJsonParse(r.contentJson),
+    })),
     scores: project.scores.map((s) => ({
       ...s,
       categoriesJson: safeJsonParse(s.categoriesJson),
@@ -69,7 +73,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await getSessionOrToken(req);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -98,7 +102,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const session = await getSessionOrToken(req);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

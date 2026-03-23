@@ -49,9 +49,10 @@ export interface GeneratedIdea {
 }
 
 export interface ComplianceResult {
-  score: number;
-  maxScore: number;
+  allCompliant: boolean;
   checks: ComplianceCheck[];
+  summary: string;
+  overrides?: string[];
 }
 
 export interface ComplianceCheck {
