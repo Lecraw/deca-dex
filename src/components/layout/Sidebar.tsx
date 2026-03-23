@@ -34,8 +34,8 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex flex-col bg-background/60 backdrop-blur-2xl transition-all duration-300 relative z-10 border-r border-white/5 dark:border-white/10",
-        collapsed ? "w-16" : "w-60"
+        "hidden md:flex flex-col bg-background/50 backdrop-blur-2xl transition-all duration-300 relative z-10 border-r border-white/5 dark:border-white/10 noise-bg",
+        collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Logo area */}
@@ -75,13 +75,13 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-250 relative",
+                "group flex items-center gap-3 px-3.5 py-3 rounded-2xl text-[14px] font-semibold transition-all duration-250 relative",
                 isActive
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  ? "skeuo-inset text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
-              <item.icon className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isActive && "scale-105")} />
+              <item.icon className={cn("h-[18px] w-[18px] shrink-0 transition-transform duration-200", isActive && "scale-105 drop-shadow-sm")} />
               {!collapsed && <span>{item.label}</span>}
             </Link>
           );

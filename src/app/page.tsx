@@ -60,17 +60,17 @@ const steps = [
 ];
 
 const impactStats = [
-  { value: "12,400+", label: "Students Helped", icon: Users, sub: "Across 380+ high schools" },
-  { value: "87%", label: "Score Improvement", icon: TrendingUp, sub: "On official judge rubrics" },
-  { value: "2,300+", label: "Projects Built", icon: Target, sub: "Competition-ready materials" },
-  { value: "340+", label: "Competition Wins", icon: Award, sub: "From districts to ICDC" },
+  { value: "12,400+", label: "Students Helped", icon: Users, sub: "Across 380+ hs" },
+  { value: "87%", label: "Score Impr", icon: TrendingUp, sub: "Official rubrics" },
+  { value: "2,300+", label: "Projects Built", icon: Target, sub: "Comp-ready" },
+  { value: "340+", label: "Roleplays Won", icon: Award, sub: "ICDC level" },
 ];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
+    <div className="min-h-screen bg-background noise-bg text-foreground antialiased selection:bg-primary/20">
       {/* ─── Header ─────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/50 backdrop-blur-2xl border-b border-border/20">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-6 md:px-8">
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/logo-white.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:block hidden object-contain" />
@@ -86,31 +86,31 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-[14px] font-medium h-9 rounded-full" asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="h-9 px-4 text-[14px] rounded-full font-medium tracking-tight shadow-sm" asChild>
-              <Link href="/login">Get Started</Link>
-            </Button>
+            <Link href="/login" className="hidden sm:inline-flex text-[14px] font-medium px-4 py-2 text-muted-foreground hover:text-foreground transition-colors">
+              Sign In
+            </Link>
+            <Link href="/login" className="h-9 px-5 flex items-center justify-center text-[14px] rounded-full font-medium tracking-tight skeuo-btn">
+              Get Started
+            </Link>
           </div>
         </div>
       </header>
 
       <main>
         {/* ─── Hero ───────────────────────────── */}
-        <section className="relative pt-36 pb-24 md:pt-48 md:pb-32 overflow-hidden">
+        <section className="relative pt-40 pb-24 md:pt-48 md:pb-32 overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 md:px-8 text-center relative z-10 flex flex-col items-center">
             
             {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 mb-8 rounded-full border border-border/50 bg-muted/30 text-[12px] font-medium text-muted-foreground tracking-wide">
-              <Zap className="h-3.5 w-3.5 text-primary" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full skeuo-inset text-[12px] font-medium text-muted-foreground tracking-wide">
+              <Zap className="h-3.5 w-3.5 text-primary drop-shadow-[0_2px_4px_rgba(255,255,255,0.2)]" />
               <span>AI-Powered DECA Preparation</span>
             </div>
 
             {/* Heading */}
             <h1 className="text-5xl md:text-7xl lg:text-[5rem] font-bold tracking-tight leading-[1.05] max-w-4xl mx-auto text-foreground">
               Build Winning Projects <br className="hidden md:block" />
-              <span className="text-primary">with AI</span>
+              <span className="text-primary drop-shadow-sm">with AI</span>
             </h1>
 
             {/* Subheading */}
@@ -119,29 +119,29 @@ export default function LandingPage() {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
-              <Button size="lg" className="h-12 px-8 rounded-full text-base font-medium shadow-sm w-full sm:w-auto" asChild>
-                <Link href="/login">
-                  Start for free
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 px-8 rounded-full text-base font-medium w-full sm:w-auto border-border/60 hover:bg-muted/50 transition-colors" asChild>
-                <Link href="/events">Browse Events</Link>
-              </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12 w-full sm:w-auto">
+              <Link href="/login" className="h-14 px-8 flex items-center justify-center rounded-full text-lg font-medium w-full sm:w-auto skeuo-btn">
+                Start for free
+              </Link>
+              <Link href="/events" className="h-14 px-8 flex items-center justify-center rounded-full text-lg font-medium w-full sm:w-auto skeuo-btn-secondary text-foreground">
+                Browse Events
+              </Link>
             </div>
             
             {/* Minimalist Dashboard Preview Graphic */}
-            <div className="mt-20 w-full max-w-5xl rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm shadow-[0_8px_40px_rgba(0,0,0,0.04)] aspect-video overflow-hidden flex flex-col relative mx-auto">
-              <div className="h-10 border-b border-border/40 flex items-center px-4 gap-2 bg-muted/20">
-                <div className="w-3 h-3 rounded-full bg-border/80" />
-                <div className="w-3 h-3 rounded-full bg-border/80" />
-                <div className="w-3 h-3 rounded-full bg-border/80" />
-              </div>
-              <div className="flex-1 flex items-center justify-center bg-muted/10">
-                <div className="flex flex-col items-center gap-4 opacity-50">
-                  <Image src="/logo.png" alt="" width={64} height={64} className="w-16 h-16 dark:hidden object-contain grayscale opacity-60" />
-                  <Image src="/logo-white.png" alt="" width={64} height={64} className="w-16 h-16 hidden dark:block object-contain opacity-60" />
-                  <span className="text-sm font-medium tracking-widest text-muted-foreground uppercase">Dashboard Preview</span>
+            <div className="mt-24 w-full max-w-5xl aspect-[16/9] mx-auto skeuo-card p-2 md:p-3 overflow-hidden flex flex-col relative">
+              <div className="w-full h-full rounded-2xl skeuo-inset flex flex-col overflow-hidden relative">
+                <div className="h-10 border-b border-white/5 flex items-center px-4 gap-2 bg-black/10">
+                  <div className="w-3 h-3 rounded-full skeuo-btn-secondary shadow-sm" />
+                  <div className="w-3 h-3 rounded-full skeuo-btn-secondary shadow-sm" />
+                  <div className="w-3 h-3 rounded-full skeuo-btn-secondary shadow-sm" />
+                </div>
+                <div className="flex-1 flex items-center justify-center bg-black/5 dark:bg-black/20 noise-bg">
+                  <div className="flex flex-col items-center gap-4 opacity-40">
+                    <Image src="/logo.png" alt="" width={64} height={64} className="w-16 h-16 dark:hidden object-contain grayscale" />
+                    <Image src="/logo-white.png" alt="" width={64} height={64} className="w-16 h-16 hidden dark:block object-contain" />
+                    <span className="text-sm font-semibold tracking-widest text-muted-foreground uppercase drop-shadow-sm">Dashboard Preview</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -149,20 +149,21 @@ export default function LandingPage() {
         </section>
 
         {/* ─── Features ──────────────────────── */}
-        <section id="features" className="py-24 md:py-32 bg-muted/20 border-y border-border/40">
+        <section id="features" className="py-24 md:py-32 relative">
+          <div className="absolute inset-0 bg-muted/30 -z-10 skew-y-1 transform origin-top-left" />
           <div className="max-w-7xl mx-auto px-6 md:px-8">
             <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Everything You Need</h2>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground drop-shadow-sm">Everything You Need</h2>
               <p className="text-muted-foreground mt-4 text-[17px] leading-relaxed">A complete toolkit designed exclusively for DECA competitors to streamline research, writing, and presentation.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((f, i) => (
-                <div key={i} className="group relative bg-card p-8 rounded-3xl border border-border/40 hover:border-border/80 shadow-sm hover:shadow-md transition-all duration-300">
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary mb-6 transition-transform duration-300 group-hover:scale-110">
-                    <f.icon className="h-6 w-6" strokeWidth={2} />
+                <div key={i} className="group skeuo-card p-8 transition-transform duration-300 hover:-translate-y-1">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl skeuo-inset text-primary mb-6">
+                    <f.icon className="h-6 w-6 drop-shadow-sm" strokeWidth={2} />
                   </div>
-                  <h3 className="font-semibold text-lg text-foreground mb-3">{f.title}</h3>
+                  <h3 className="font-semibold text-xl text-foreground mb-3">{f.title}</h3>
                   <p className="text-muted-foreground text-[15px] leading-relaxed">{f.description}</p>
                 </div>
               ))}
@@ -174,15 +175,15 @@ export default function LandingPage() {
         <section id="how-it-works" className="py-24 md:py-32">
           <div className="max-w-7xl mx-auto px-6 md:px-8">
             <div className="mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">How It Works</h2>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground drop-shadow-sm">How It Works</h2>
               <p className="text-muted-foreground mt-4 text-[17px]">Four steps from blank slate to competition ready.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-12 relative">
-              <div className="hidden md:block absolute top-6 left-8 right-8 h-px bg-border/60" />
+              <div className="hidden md:block absolute top-[28px] left-8 right-8 h-1 skeuo-inset rounded-full" />
               {steps.map((s, i) => (
                 <div key={i} className="relative z-10 flex flex-col">
-                  <div className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center text-primary font-semibold text-lg mb-6 shadow-sm">
+                  <div className="w-14 h-14 rounded-full skeuo-card flex items-center justify-center text-primary font-bold text-xl mb-6 border-border/20">
                     {s.num}
                   </div>
                   <h3 className="font-semibold text-lg text-foreground mb-2">{s.title}</h3>
@@ -194,35 +195,37 @@ export default function LandingPage() {
         </section>
 
         {/* ─── Impact Stats ──────────────────── */}
-        <section id="impact" className="py-24 md:py-32 bg-muted/20 border-y border-border/40">
+        <section id="impact" className="py-24 md:py-32 relative">
+          <div className="absolute inset-0 bg-muted/30 -z-10 -skew-y-1 transform origin-bottom-right" />
           <div className="max-w-7xl mx-auto px-6 md:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-16 drop-shadow-sm">
               Trusted by Top Competitors
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {impactStats.map((stat, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-background border border-border/50 flex items-center justify-center text-muted-foreground mb-5 shadow-sm">
-                    <stat.icon className="h-5 w-5" />
+                <div key={i} className="flex flex-col items-center skeuo-inset p-6 rounded-3xl">
+                  <div className="w-12 h-12 rounded-full skeuo-card flex items-center justify-center text-primary mb-5">
+                    <stat.icon className="h-5 w-5 drop-shadow-sm" />
                   </div>
-                  <div className="text-4xl font-bold tracking-tight text-foreground mb-2">
+                  <div className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-2 drop-shadow-sm">
                     {stat.value}
                   </div>
-                  <div className="text-[15px] font-medium text-foreground mb-1">{stat.label}</div>
-                  <div className="text-sm text-muted-foreground">{stat.sub}</div>
+                  <div className="text-[15px] font-semibold text-foreground mb-1">{stat.label}</div>
+                  <div className="text-xs text-muted-foreground">{stat.sub}</div>
                 </div>
               ))}
             </div>
             
-            <div className="mt-20 max-w-2xl mx-auto px-6 py-8 rounded-3xl bg-card border border-border/40 shadow-sm relative">
-              <blockquote className="text-[17px] text-foreground font-medium leading-relaxed italic">
-                "Nexari helped me go from not knowing where to start to winning 1st place at States in my very first year competing."
-              </blockquote>
-              <div className="mt-4 flex items-center justify-center gap-3">
-                <div className="w-6 h-px bg-border/60" />
-                <span className="text-[13px] font-semibold tracking-wide text-muted-foreground uppercase">DECA Chapter President</span>
-                <div className="w-6 h-px bg-border/60" />
+            <div className="mt-20 max-w-3xl mx-auto p-2 skeuo-card">
+              <div className="skeuo-inset rounded-2xl p-8 text-center">
+                <blockquote className="text-lg md:text-xl text-foreground font-medium leading-relaxed italic">
+                  "Nexari helped me go from not knowing where to start to winning 1st place at States in my very first year competing."
+                </blockquote>
+                <div className="mt-6 inline-block w-12 h-1 bg-primary rounded-full opacity-50 mb-3" />
+                <div className="text-[13px] font-bold tracking-wider text-muted-foreground uppercase">
+                  DECA Chapter President
+                </div>
               </div>
             </div>
           </div>
@@ -231,31 +234,29 @@ export default function LandingPage() {
         {/* ─── CTA ───────────────────────────── */}
         <section className="py-32">
           <div className="max-w-4xl mx-auto px-6 md:px-8 text-center">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-6">
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground mb-6 drop-shadow-sm">
               Ready to Win?
             </h2>
-            <p className="text-[17px] md:text-lg text-muted-foreground mb-10 max-w-xl mx-auto">
+            <p className="text-[17px] md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto leading-relaxed">
               Join thousands of students building their DECA projects with intelligent AI assistance.
             </p>
-            <Button size="lg" className="rounded-full px-10 h-14 text-lg font-medium shadow-md" asChild>
-              <Link href="/login">
-                Get Started Now
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+            <Link href="/login" className="inline-flex items-center justify-center rounded-full px-12 h-16 text-xl font-semibold skeuo-btn">
+              Get Started Now
+              <ArrowRight className="ml-3 h-6 w-6 drop-shadow-sm" />
+            </Link>
           </div>
         </section>
       </main>
 
       {/* ─── Footer ───────────────────────────── */}
-      <footer className="border-t border-border/40 py-10 bg-muted/10">
+      <footer className="py-10 border-t border-border/20">
         <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Image src="/logo-white.png" alt="" width={20} height={20} className="w-5 h-5 dark:block hidden object-contain grayscale opacity-50" />
             <Image src="/logo.png" alt="" width={20} height={20} className="w-5 h-5 dark:hidden block object-contain grayscale opacity-50" />
-            <span className="text-[13px] font-medium text-muted-foreground tracking-wide">Nexari</span>
+            <span className="text-[14px] font-semibold text-muted-foreground tracking-wide">Nexari</span>
           </div>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground font-medium">
             Non-affiliated educational tool. Not associated with DECA Inc.
           </p>
         </div>

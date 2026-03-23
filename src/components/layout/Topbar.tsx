@@ -38,10 +38,10 @@ export function Topbar() {
   const xpProgress = Math.min((xp / xpForNextLevel) * 100, 100);
 
   return (
-    <header className="flex items-center justify-between h-14 px-5 border-b border-border/40 bg-background/60 backdrop-blur-2xl sticky top-0 z-40">
+    <header className="flex items-center justify-between h-14 px-5 border-b border-border/20 bg-background/50 backdrop-blur-2xl sticky top-0 z-40 noise-bg">
       <div className="flex items-center gap-2 md:hidden">
         <Sheet>
-          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors">
+          <SheetTrigger className="inline-flex items-center justify-center h-10 w-10 rounded-2xl skeuo-card text-foreground transition-all active:scale-95">
             <Menu className="h-5 w-5" />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
@@ -59,33 +59,36 @@ export function Topbar() {
 
       <div className="flex items-center gap-4">
         {/* XP indicator */}
-        <div className="hidden sm:flex items-center gap-3 bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+        <div className="hidden sm:flex items-center gap-3 skeuo-inset px-4 py-1.5 rounded-full">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest drop-shadow-sm">
             Lv.{level}
           </span>
-          <Progress value={xpProgress} className="w-20 h-1.5 bg-muted-foreground/20" />
-          <span className="text-[11px] font-bold text-primary">{xp} XP</span>
+          <div className="w-20 h-2 bg-black/10 dark:bg-black/40 rounded-full shadow-inner overflow-hidden relative">
+            <div 
+              className="absolute left-0 top-0 bottom-0 bg-primary shadow-sm"
+              style={{ width: `${xpProgress}%` }}
+            />
+          </div>
+          <span className="text-[11px] font-bold text-primary drop-shadow-sm">{xp} XP</span>
         </div>
 
         {/* Separator */}
-        <div className="hidden sm:block w-px h-4 bg-border" />
+        <div className="hidden sm:block w-px h-5 border-r border-white/10 dark:border-white/5" />
 
         {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full hover:bg-muted"
+        <button
+          className="h-9 w-9 rounded-full skeuo-card flex items-center justify-center active:scale-95 transition-transform"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
-          <Sun className="h-4 w-4 hidden dark:block text-muted-foreground" />
-          <Moon className="h-4 w-4 block dark:hidden text-muted-foreground" />
-        </Button>
+          <Sun className="h-[18px] w-[18px] hidden dark:block text-muted-foreground drop-shadow-sm" />
+          <Moon className="h-[18px] w-[18px] block dark:hidden text-muted-foreground drop-shadow-sm" />
+        </button>
 
         {/* User Menu */}
         {session?.user ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative h-8 w-8 rounded-full inline-flex items-center justify-center hover:opacity-80 transition-opacity">
-              <Avatar className="h-8 w-8 rounded-full ring-1 ring-border/50">
+            <DropdownMenuTrigger className="relative h-10 w-10 rounded-full inline-flex items-center justify-center hover:opacity-90 active:scale-95 transition-all outline-none">
+              <Avatar className="h-10 w-10 rounded-full skeuo-card p-[2px]">
                 <AvatarImage
                   src={session.user.image || ""}
                   alt={session.user.name || ""}
