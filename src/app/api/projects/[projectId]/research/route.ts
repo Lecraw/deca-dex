@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { RESEARCH_TEMPLATES } from "@/lib/research-templates";
 
 export async function GET(
   req: NextRequest,
@@ -14,10 +15,33 @@ export async function GET(
 
   const { projectId } = await params;
 
-  const docs = await prisma.researchDocument.findMany({
+  let docs = await prisma.researchDocument.findMany({
     where: { project: { id: projectId, userId: session.user.id } },
     orderBy: { order: "asc" },
   });
+
+  // Backfill research documents for projects created before auto-creation was added
+  if (docs.length === 0) {
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: session.user.id },
+    });
+    if (project) {
+      await prisma.researchDocument.createMany({
+        data: RESEARCH_TEMPLATES.map((t, i) => ({
+          projectId,
+          order: i,
+          title: t.title,
+          template: t.key,
+          contentJson: "{}",
+          status: "NOT_STARTED",
+        })),
+      });
+      docs = await prisma.researchDocument.findMany({
+        where: { projectId },
+        orderBy: { order: "asc" },
+      });
+    }
+  }
 
   return NextResponse.json(
     docs.map((d) => ({

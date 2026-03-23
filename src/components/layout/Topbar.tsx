@@ -38,10 +38,10 @@ export function Topbar() {
   const xpProgress = Math.min((xp / xpForNextLevel) * 100, 100);
 
   return (
-    <header className="flex items-center justify-between h-14 px-4 border-b border-border/50 bg-card/30 backdrop-blur-sm">
+    <header className="flex items-center justify-between h-14 px-5 border-b border-border/40 bg-background/60 backdrop-blur-2xl sticky top-0 z-40">
       <div className="flex items-center gap-2 md:hidden">
         <Sheet>
-          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors">
             <Menu className="h-5 w-5" />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
@@ -59,44 +59,44 @@ export function Topbar() {
 
       <div className="flex items-center gap-4">
         {/* XP indicator */}
-        <div className="hidden sm:flex items-center gap-2.5">
-          <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+        <div className="hidden sm:flex items-center gap-3 bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
             Lv.{level}
           </span>
-          <Progress value={xpProgress} className="w-24 h-1.5" />
-          <span className="text-[11px] font-mono font-bold text-primary">{xp} XP</span>
+          <Progress value={xpProgress} className="w-20 h-1.5 bg-muted-foreground/20" />
+          <span className="text-[11px] font-bold text-primary">{xp} XP</span>
         </div>
 
         {/* Separator */}
-        <div className="hidden sm:block w-px h-5 bg-border/50" />
+        <div className="hidden sm:block w-px h-4 bg-border" />
 
         {/* Theme Toggle */}
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 rounded-full hover:bg-muted"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
-          <Sun className="h-4 w-4 hidden dark:block" />
-          <Moon className="h-4 w-4 block dark:hidden" />
+          <Sun className="h-4 w-4 hidden dark:block text-muted-foreground" />
+          <Moon className="h-4 w-4 block dark:hidden text-muted-foreground" />
         </Button>
 
         {/* User Menu */}
         {session?.user ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative h-8 w-8 rounded-sm inline-flex items-center justify-center hover:bg-accent transition-colors">
-              <Avatar className="h-7 w-7 rounded-sm">
+            <DropdownMenuTrigger className="relative h-8 w-8 rounded-full inline-flex items-center justify-center hover:opacity-80 transition-opacity">
+              <Avatar className="h-8 w-8 rounded-full ring-1 ring-border/50">
                 <AvatarImage
                   src={session.user.image || ""}
                   alt={session.user.name || ""}
                 />
-                <AvatarFallback className="rounded-sm text-xs">
+                <AvatarFallback className="rounded-full text-xs font-medium">
                   {session.user.name?.charAt(0)?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <div className="flex items-center gap-2 p-2">
+            <DropdownMenuContent align="end" className="rounded-2xl shadow-xl mt-2 w-56 border-white/10 bg-background/80 backdrop-blur-2xl">
+              <div className="flex items-center gap-3 p-3">
                 <div className="flex flex-col space-y-0.5">
                   <p className="text-sm font-medium">{session.user.name}</p>
                   <p className="text-xs text-muted-foreground">

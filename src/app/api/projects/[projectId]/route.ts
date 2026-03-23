@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionOrToken } from "@/lib/auth-token";
 import { prisma } from "@/lib/prisma";
+import { RESEARCH_TEMPLATES } from "@/lib/research-templates";
 
 function safeJsonParse(value: string | null | undefined) {
   if (!value) return null;
@@ -22,7 +23,7 @@ export async function GET(
 
   const { projectId } = await params;
 
-  const project = await prisma.project.findFirst({
+  let project = await prisma.project.findFirst({
     where: { id: projectId, userId: session.user.id },
     include: {
       event: true,
@@ -36,6 +37,35 @@ export async function GET(
 
   if (!project) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Backfill research documents for projects created before auto-creation was added
+  if (project.research.length === 0) {
+    await prisma.researchDocument.createMany({
+      data: RESEARCH_TEMPLATES.map((t, i) => ({
+        projectId,
+        order: i,
+        title: t.title,
+        template: t.key,
+        contentJson: "{}",
+        status: "NOT_STARTED",
+      })),
+    });
+    // Re-fetch with newly created research docs
+    project = await prisma.project.findFirst({
+      where: { id: projectId, userId: session.user.id },
+      include: {
+        event: true,
+        slides: { orderBy: { order: "asc" } },
+        sections: { orderBy: { order: "asc" } },
+        research: { orderBy: { order: "asc" } },
+        feedback: { orderBy: { createdAt: "desc" }, take: 20 },
+        scores: { orderBy: { createdAt: "desc" }, take: 5 },
+      },
+    });
+    if (!project) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
   }
 
   // Parse JSON string fields for client consumption

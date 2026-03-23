@@ -56,6 +56,7 @@ export default function ResearchPage() {
   const initDoc = (doc: any) => {
     setActiveDocId(doc.id);
     const content = doc.contentJson || {};
+
     if (content.sections && content.sections.length > 0) {
       setEditContent(
         content.sections
@@ -63,7 +64,16 @@ export default function ResearchPage() {
           .join("\n\n")
       );
     } else {
-      setEditContent("");
+      // Pre-fill with template guiding questions
+      const tmpl = RESEARCH_TEMPLATES.find((t) => t.key === doc.template);
+      if (tmpl) {
+        setEditContent(
+          `# ${tmpl.title}\n\n` +
+          tmpl.guidingQuestions.map(q => `## ${q}\n\n*(Add your research here...)*`).join("\n\n")
+        );
+      } else {
+        setEditContent("");
+      }
     }
     setCustomPrompt("");
   };
