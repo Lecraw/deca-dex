@@ -99,6 +99,20 @@ export default function LandingPage() {
       <main>
         {/* ─── Hero ───────────────────────────── */}
         <section className="relative pt-40 pb-24 md:pt-48 md:pb-32 overflow-hidden">
+          {/* Floating Decor: Laptop */}
+          <div className="absolute top-32 -left-10 lg:left-[5%] hidden md:block animate-float">
+            <div className="skeuo-card p-2 rounded-3xl w-[220px] lg:w-[280px] bg-white dark:bg-card">
+              <Image src="/laptop.png" alt="DECA Pitch Deck" width={280} height={280} className="rounded-2xl w-full h-auto" />
+            </div>
+          </div>
+
+          {/* Floating Decor: Keyboard */}
+          <div className="absolute top-52 -right-10 lg:right-[5%] hidden md:block animate-float-delay">
+            <div className="skeuo-card p-2 rounded-3xl w-[200px] lg:w-[260px] bg-white dark:bg-card">
+              <Image src="/keyboard.png" alt="Workspace" width={260} height={260} className="rounded-2xl w-full h-auto" />
+            </div>
+          </div>
+
           <div className="max-w-7xl mx-auto px-6 md:px-8 text-center relative z-10 flex flex-col items-center">
             
             {/* Pill Badge */}
@@ -190,6 +204,13 @@ export default function LandingPage() {
                   <p className="text-muted-foreground text-[15px] leading-relaxed">{s.desc}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Noteook Graphic Floating Over Steps */}
+            <div className="mt-20 w-full flex justify-center animate-float-delay">
+              <div className="skeuo-card p-2 rounded-[2rem] max-w-sm bg-white dark:bg-card -rotate-2">
+                <Image src="/notebook.png" alt="Research Notebook" width={400} height={400} className="rounded-[1.5rem] w-full h-auto shadow-inner" />
+              </div>
             </div>
           </div>
         </section>
