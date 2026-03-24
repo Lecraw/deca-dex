@@ -28,8 +28,8 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 p-4 border-b">
+    <div className="flex flex-col h-full glass-panel border-r-0 border-y-0 rounded-none bg-background/50">
+      <div className="flex items-center gap-3 p-5 border-b border-border/20">
         <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:block hidden object-contain" />
         <Image src="/logo.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:hidden block object-contain" />
         <span className="font-bold text-lg">Nexari</span>
@@ -44,10 +44,10 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-4 py-3 rounded-2xl text-[15px] font-semibold transition-all duration-250",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  ? "glass-card text-primary"
+                  : "text-foreground/70 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
