@@ -16,8 +16,11 @@ import {
   Users,
   Award,
   Target,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useTheme } from "next-themes";
 
 /* ─── Data ────────────────────────────────────── */
 
@@ -313,25 +316,23 @@ function LogoSpinSection() {
               }}
             >
               <div
-                className={`w-80 md:w-96 lg:w-[420px] p-8 md:p-10 lg:p-12 rounded-xl border shadow-2xl ${side === "right" ? "text-right" : ""}`}
+                className={`w-80 md:w-96 lg:w-[420px] p-8 md:p-10 lg:p-12 rounded-xl border bg-card/90 text-card-foreground border-border/50 backdrop-blur-xl shadow-2xl ${side === "right" ? "text-right" : ""}`}
                 style={{
-                  background: "oklch(0.14 0.015 260)",
-                  borderColor: "oklch(0.25 0.02 260)",
-                  boxShadow: `0 8px 32px oklch(0 0 0 / 0.4), 0 0 0 1px oklch(0.25 0.02 260 / 0.5), 0 0 ${20 * opacity}px oklch(0.50 0.16 255 / ${0.06 * opacity})`,
+                  boxShadow: `0 8px 32px rgba(0,0,0,0.15), 0 0 ${20 * opacity}px oklch(0.50 0.16 255 / ${0.06 * opacity})`,
                 }}
               >
                 <span className="text-primary text-[11px] md:text-xs font-mono uppercase tracking-[0.18em]">
                   {String(i + 1).padStart(2, "0")} / {card.category}
                 </span>
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-3 md:mt-4 tracking-tight text-white">{card.title}</h3>
-                <p className="text-sm md:text-base text-[oklch(0.65_0.005_250)] mt-2 md:mt-3 leading-relaxed">{card.desc}</p>
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-3 md:mt-4 tracking-tight">{card.title}</h3>
+                <p className="text-sm md:text-base text-muted-foreground mt-2 md:mt-3 leading-relaxed">{card.desc}</p>
                 {/* Progress dots */}
                 <div className={`flex gap-2 mt-6 md:mt-8 ${side === "right" ? "justify-end" : ""}`}>
                   {storyCards.map((_, di) => (
                     <div
                       key={di}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
-                        di === i ? "w-6 bg-primary" : "w-2 bg-[oklch(0.3_0.01_260)]"
+                        di === i ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30"
                       }`}
                     />
                   ))}
@@ -374,6 +375,7 @@ function LogoSpinSection() {
 export default function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
   const initReveal = useScrollReveal();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const cleanup = initReveal(rootRef.current);
@@ -423,6 +425,15 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              <Sun className="h-4 w-4 hidden dark:block" />
+              <Moon className="h-4 w-4 block dark:hidden" />
+            </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-9" asChild>
               <Link href="/login">Sign In</Link>
             </Button>
