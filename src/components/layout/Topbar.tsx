@@ -38,26 +38,40 @@ export function Topbar() {
   const xpProgress = Math.min((xp / xpForNextLevel) * 100, 100);
 
   return (
-    <header className="flex items-center justify-between h-14 px-5 border-b border-border/40 bg-background/60 backdrop-blur-2xl sticky top-0 z-40">
-      <div className="flex items-center gap-2 md:hidden">
-        <Sheet>
-          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors">
-            <Menu className="h-5 w-5" />
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <MobileNav />
-          </SheetContent>
-        </Sheet>
-        <div className="flex items-center gap-1.5">
-          <Image src="/logo-white.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:block hidden object-contain" />
-          <Image src="/logo.png" alt="Nexari" width={28} height={28} className="w-7 h-7 dark:hidden block object-contain" />
-          <span className="font-bold text-sm tracking-tight">Nexari</span>
-        </div>
-      </div>
+    <header className="sticky top-3 z-40 px-3 md:px-6 md:ml-60">
+      <div className="backdrop-blur-2xl bg-background/80 dark:bg-background/60 border border-border/50 rounded-2xl shadow-lg shadow-black/5 dark:shadow-black/20">
+        <div className="flex items-center justify-between h-14 px-5">
+          <div className="flex items-center gap-2 md:hidden">
+            <Sheet>
+              <SheetTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground transition-colors">
+                <Menu className="h-4 w-4" />
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0">
+                <MobileNav />
+              </SheetContent>
+            </Sheet>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-7 h-7 shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+                  WebkitMaskImage: "url(/logo-white.png)",
+                  maskImage: "url(/logo-white.png)",
+                  WebkitMaskSize: "contain",
+                  maskSize: "contain",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskPosition: "center",
+                  maskPosition: "center",
+                }}
+              />
+              <span className="font-bold text-sm tracking-tight">Nexari</span>
+            </div>
+          </div>
 
-      <div className="hidden md:block" />
+          <div className="hidden md:block" />
 
-      <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
         {/* XP indicator */}
         <div className="hidden sm:flex items-center gap-3 bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
@@ -121,6 +135,8 @@ export function Topbar() {
             <a href="/login">Sign In</a>
           </Button>
         )}
+          </div>
+        </div>
       </div>
     </header>
   );

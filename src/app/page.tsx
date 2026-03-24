@@ -18,9 +18,15 @@ import {
   Target,
   Sun,
   Moon,
+  Menu,
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
+import { SplineScene } from "@/components/ui/spline";
+import { Spotlight } from "@/components/ui/spotlight";
+import { FeatureCard } from "@/components/ui/feature-card";
+import { ImpactCard } from "@/components/ui/impact-card";
+import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 
 /* ─── Data ────────────────────────────────────── */
 
@@ -385,120 +391,161 @@ export default function LandingPage() {
   return (
     <div ref={rootRef} className="min-h-screen bg-background text-foreground">
 
-      {/* ─── Header ─────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-background/50 border-b border-border/30">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 shrink-0"
-              style={{
-                background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
-                WebkitMaskImage: "url(/logo-white.png)",
-                maskImage: "url(/logo-white.png)",
-                WebkitMaskSize: "contain",
-                maskSize: "contain",
-                WebkitMaskRepeat: "no-repeat",
-                maskRepeat: "no-repeat",
-                WebkitMaskPosition: "center",
-                maskPosition: "center",
-              }}
-            />
-            <span className="font-bold text-xl tracking-tight">Nexari</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
-            {[
-              { href: "#features", label: "Features" },
-              { href: "#how-it-works", label: "How It Works" },
-              { href: "#impact", label: "Impact" },
-              { href: "/events", label: "Events" },
-            ].map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="hover:text-foreground transition-colors relative group py-1"
-              >
-                {link.label}
-                <span className="absolute -bottom-0.5 left-0 w-0 h-[1.5px] bg-primary group-hover:w-full transition-all duration-300" />
+      {/* ─── Floating Island Header ─────────────────────────── */}
+      <header className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6 navbar-float">
+        <div className="max-w-6xl mx-auto">
+          <div className="backdrop-blur-2xl bg-background/80 dark:bg-background/60 border border-border/50 rounded-full shadow-lg shadow-black/5 dark:shadow-black/20 hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/30 transition-shadow duration-300">
+            <div className="flex items-center justify-between h-14 px-6 md:px-8">
+              <Link href="/" className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+                    WebkitMaskImage: "url(/logo-white.png)",
+                    maskImage: "url(/logo-white.png)",
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                  }}
+                />
+                <span className="font-bold text-lg tracking-tight">Nexari</span>
               </Link>
-            ))}
-          </nav>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-muted-foreground"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              <Sun className="h-4 w-4 hidden dark:block" />
-              <Moon className="h-4 w-4 block dark:hidden" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-9" asChild>
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button size="sm" className="h-9 text-[13px]" asChild>
-              <Link href="/login">
-                Get Started
-                <ArrowRight className="ml-1 h-3 w-3" />
-              </Link>
-            </Button>
+              <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+                {[
+                  { href: "#features", label: "Features" },
+                  { href: "#how-it-works", label: "How It Works" },
+                  { href: "#impact", label: "Impact" },
+                  { href: "/events", label: "Events" },
+                ].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="px-4 py-2 text-[13px] text-muted-foreground hover:text-foreground transition-all duration-200 relative group rounded-full hover:bg-accent/50"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground rounded-full"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                >
+                  <Sun className="h-4 w-4 hidden dark:block" />
+                  <Moon className="h-4 w-4 block dark:hidden" />
+                </Button>
+                <div className="hidden sm:flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-8 rounded-full px-4" asChild>
+                    <Link href="/login">Sign In</Link>
+                  </Button>
+                  <Button size="sm" className="h-8 text-[13px] rounded-full px-4 bg-primary hover:bg-primary/90" asChild>
+                    <Link href="/login">
+                      Get Started
+                      <ArrowRight className="ml-1 h-3 w-3" />
+                    </Link>
+                  </Button>
+                </div>
+                {/* Mobile menu button */}
+                <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden rounded-full">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       <main>
-        {/* ─── Hero ───────────────────────────── */}
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-          {/* Ambient layers */}
-          <div className="absolute inset-0 hero-mesh" />
-          <div className="absolute inset-0 grid-bg opacity-40 dark:opacity-70" />
+        {/* ─── Hero with 3D Spline ───────────────────────────── */}
+        <section className="relative min-h-screen overflow-hidden bg-black/95 dark:bg-black/95">
+          {/* Background effects */}
+          <Spotlight
+            className="-top-40 left-0 md:left-60 md:-top-20"
+            fill="white"
+          />
+          <div className="absolute inset-0 grid-bg opacity-20 dark:opacity-30" />
           <Particles />
 
-          {/* Scan line effect */}
-          <div className="absolute inset-0 scan-line overflow-hidden pointer-events-none" />
+          {/* Main content container */}
+          <div className="relative min-h-screen flex items-center">
+            <div className="max-w-7xl mx-auto px-6 py-20 pt-28 w-full">
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left content - Text */}
+                <div className="relative z-10">
+                  {/* Badge */}
+                  <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 text-[11px] uppercase tracking-[0.2em] text-primary/80 border border-primary/15 bg-primary/5 font-medium">
+                    <Zap className="h-3 w-3" />
+                    AI-Powered DECA Preparation
+                  </div>
 
-          {/* Radial glow */}
-          <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[radial-gradient(ellipse,oklch(0.42_0.18_255/0.15)_0%,transparent_65%)] pointer-events-none" />
+                  {/* Heading */}
+                  <h1 className="text-5xl md:text-6xl lg:text-[4.5rem] font-bold tracking-[-0.04em] leading-[1.05] bg-clip-text text-transparent bg-gradient-to-b from-white to-neutral-400">
+                    Your Gateway to{" "}
+                    <span className="text-primary text-glow">Winning</span>{" "}
+                    at DECA
+                  </h1>
 
-          <div className="max-w-7xl mx-auto px-6 pt-28 pb-20 text-center relative z-10">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 mb-10 text-[11px] uppercase tracking-[0.2em] text-primary/80 border border-primary/15 bg-primary/5 font-medium">
-              <Zap className="h-3 w-3" />
-              AI-Powered DECA Preparation
-            </div>
+                  {/* Subheading */}
+                  <p className="text-[15px] md:text-base text-neutral-300 dark:text-neutral-300 max-w-lg mt-6 leading-relaxed">
+                    From idea to competition-ready pitch deck. AI mentoring, judge simulation, and compliance checking — all in one platform.
+                  </p>
 
-            {/* Heading */}
-            <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-[-0.04em] leading-[1.05] max-w-5xl mx-auto">
-              Your Gateway to{" "}
-              <span className="text-primary text-glow">Winning</span>{" "}
-              at DECA
-            </h1>
+                  {/* CTAs */}
+                  <div className="flex flex-col sm:flex-row items-start gap-3 mt-8">
+                    <Button size="lg" className="group h-11 px-7" asChild>
+                      <Link href="/login">
+                        Get Started
+                        <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
+                    </Button>
+                    <Button size="lg" variant="neon" className="h-11 px-7" asChild>
+                      <Link href="/events">Browse Events</Link>
+                    </Button>
+                  </div>
 
-            {/* Subheading */}
-            <p className="text-[15px] md:text-base text-muted-foreground max-w-lg mx-auto mt-8 leading-relaxed">
-              From idea to competition-ready pitch deck. AI mentoring, judge simulation, and compliance checking — all in one platform.
-            </p>
+                  {/* Quick stats */}
+                  <div className="flex items-center gap-8 mt-12 pt-8 border-t border-white/10">
+                    <div>
+                      <div className="text-2xl font-bold text-white">12,400+</div>
+                      <div className="text-xs text-neutral-400 uppercase tracking-wider">Students</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-white">50+</div>
+                      <div className="text-xs text-neutral-400 uppercase tracking-wider">Events</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-white">87%</div>
+                      <div className="text-xs text-neutral-400 uppercase tracking-wider">Score Boost</div>
+                    </div>
+                  </div>
+                </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-10">
-              <Button size="lg" className="group h-11 px-7" asChild>
-                <Link href="/login">
-                  Get Started
-                  <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="neon" className="h-11 px-7" asChild>
-                <Link href="/events">Browse Events</Link>
-              </Button>
+                {/* Right content - 3D Scene */}
+                <div className="relative h-[500px] lg:h-[600px]">
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent z-10 pointer-events-none lg:hidden" />
+                  <SplineScene
+                    scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+                    className="w-full h-full"
+                  />
+                  {/* Gradient overlay for better text readability on mobile */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none lg:hidden" />
+                </div>
+              </div>
             </div>
 
             {/* Scroll cue */}
-            <div className="mt-24 flex flex-col items-center gap-2 text-muted-foreground/40">
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40">
               <span className="text-[9px] uppercase tracking-[0.25em] font-medium">Scroll</span>
               <div className="relative w-px h-10">
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/30 to-transparent" />
-                <div className="absolute top-0 w-px h-3 bg-primary/60 animate-bounce" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent" />
+                <div className="absolute top-0 w-px h-3 bg-white/60 animate-bounce" />
               </div>
             </div>
           </div>
@@ -536,31 +583,14 @@ export default function LandingPage() {
 
           <div className="reveal-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f, i) => (
-              <div 
-                key={f.title} 
-                className="reveal group relative rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm p-8 hover:bg-card/60 hover:border-primary/30 transition-all duration-500 overflow-hidden cursor-default shadow-sm hover:shadow-xl"
-              >
-                {/* Graphical Watermark Icon */}
-                <f.icon className="absolute -bottom-8 -right-8 w-40 h-40 text-foreground opacity-[0.03] group-hover:opacity-[0.08] group-hover:-rotate-12 group-hover:scale-110 transition-all duration-700" />
-                
-                {/* Ambient Interior Glow */}
-                <div className={`absolute -right-10 -top-10 w-48 h-48 bg-gradient-to-br ${f.accent} opacity-[0.05] group-hover:opacity-[0.15] rounded-full blur-3xl transition-opacity duration-500`} />
-
-                {/* Top Highlight Trace */}
-                <div className="absolute top-0 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/40 transition-colors duration-700" />
-
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${f.accent} shadow-inner ring-1 ring-white/20 dark:ring-white/10`}>
-                      <f.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <span className="font-mono text-[10px] text-muted-foreground/30 font-bold uppercase tracking-[0.2em]">{String(i + 1).padStart(2, '0')}</span>
-                  </div>
-                  
-                  <h3 className="font-semibold text-[17px] mb-3 tracking-tight group-hover:text-primary transition-colors">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed drop-shadow-sm">{f.description}</p>
-                </div>
-              </div>
+              <FeatureCard
+                key={f.title}
+                icon={f.icon}
+                title={f.title}
+                description={f.description}
+                accent={f.accent}
+                index={i}
+              />
             ))}
           </div>
         </section>
@@ -629,22 +659,14 @@ export default function LandingPage() {
 
             <div className="reveal-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-5">
               {impactStats.map((stat) => (
-                <div key={stat.label} className="reveal group relative p-7 text-center border border-border/30 bg-card/30 backdrop-blur-sm hover:border-primary/15 transition-all duration-500">
-                  {/* Top line on hover */}
-                  <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                  <stat.icon className="h-5 w-5 text-primary/60 mx-auto mb-3" />
-
-                  <div className="text-3xl md:text-4xl font-bold tracking-tight mb-1">
-                    <AnimatedNumber value={stat.value} suffix={stat.suffix} />
-                  </div>
-                  <div className="text-sm font-medium mb-0.5">{stat.label}</div>
-                  <div className="text-[11px] text-muted-foreground">{stat.sub}</div>
-
-                  {/* Corner brackets */}
-                  <div className="absolute top-1 left-1 w-2.5 h-2.5 border-t border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-                  <div className="absolute bottom-1 right-1 w-2.5 h-2.5 border-b border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-                </div>
+                <ImpactCard
+                  key={stat.label}
+                  value={stat.value}
+                  suffix={stat.suffix}
+                  label={stat.label}
+                  icon={stat.icon}
+                  sub={stat.sub}
+                />
               ))}
             </div>
 
@@ -662,6 +684,9 @@ export default function LandingPage() {
 
         {/* ─── Marquee 2 ─────────────────────── */}
         <Marquee />
+
+        {/* ─── Testimonials ───────────────────── */}
+        <TestimonialsSection />
 
         {/* ─── CTA ───────────────────────────── */}
         <section className="relative py-32 overflow-hidden">

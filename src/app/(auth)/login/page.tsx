@@ -111,7 +111,20 @@ function LoginContent() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <Image src="/logo-white.png" alt="Nexari" width={32} height={32} className="w-8 h-8 object-contain" />
+            <div
+              className="w-8 h-8 shrink-0"
+              style={{
+                background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+                WebkitMaskImage: "url(/logo-white.png)",
+                maskImage: "url(/logo-white.png)",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            />
             <span className="font-bold text-lg tracking-tight">Nexari</span>
           </div>
 
@@ -151,8 +164,20 @@ function LoginContent() {
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
-            <Image src="/logo-white.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:block hidden object-contain" />
-            <Image src="/logo.png" alt="Nexari" width={40} height={40} className="w-10 h-10 dark:hidden block object-contain" />
+            <div
+              className="w-10 h-10 shrink-0"
+              style={{
+                background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+                WebkitMaskImage: "url(/logo-white.png)",
+                maskImage: "url(/logo-white.png)",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            />
             <span className="font-bold text-xl">Nexari</span>
           </div>
 

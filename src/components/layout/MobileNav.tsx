@@ -30,8 +30,20 @@ export function MobileNav() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b">
-        <Image src="/logo-white.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:block hidden object-contain" />
-        <Image src="/logo.png" alt="Nexari" width={36} height={36} className="w-9 h-9 dark:hidden block object-contain" />
+        <div
+          className="w-9 h-9 shrink-0"
+          style={{
+            background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
+            WebkitMaskImage: "url(/logo-white.png)",
+            maskImage: "url(/logo-white.png)",
+            WebkitMaskSize: "contain",
+            maskSize: "contain",
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            maskPosition: "center",
+          }}
+        />
         <span className="font-bold text-lg">Nexari</span>
       </div>
 

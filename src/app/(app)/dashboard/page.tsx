@@ -6,6 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { FloatingCard } from "@/components/ui/floating-card";
+import { ProjectListItem } from "@/components/projects/ProjectListItem";
+import { NexWelcome } from "@/components/nex/NexWelcome";
+import { NexChatbot } from "@/components/nex/NexChatbot";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   FolderOpen,
@@ -20,6 +25,7 @@ import {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
@@ -99,41 +105,72 @@ export default function DashboardPage() {
     },
   ];
 
+  // Nex messages based on user state
+  const nexMessages = projects.length === 0 ? [
+    {
+      id: "welcome",
+      text: "👋 Hi! I'm Nex, your AI assistant. I'm here to help you create amazing DECA projects! Let me show you around.",
+      actions: [
+        {
+          label: "Start First Project",
+          onClick: () => router.push("/projects/new"),
+          variant: "primary" as const
+        },
+        {
+          label: "Browse Events",
+          onClick: () => router.push("/events"),
+          variant: "outline" as const
+        }
+      ]
+    },
+    {
+      id: "tips",
+      text: "💡 Pro tip: Start with the idea generator! I can help you brainstorm unique business concepts tailored to your chosen DECA event.",
+    },
+    {
+      id: "guide",
+      text: "📚 I'll guide you through every step: from ideation to pitch deck creation, compliance checking, and even judge simulation!",
+    }
+  ] : [
+    {
+      id: "progress",
+      text: `Great progress! You have ${projects.length} project${projects.length > 1 ? 's' : ''} underway. What would you like to work on today?`,
+      actions: projects.slice(0, 2).map((p: any) => ({
+        label: p.title,
+        onClick: () => router.push(`/projects/${p.id}`),
+        variant: "outline" as const
+      }))
+    },
+    {
+      id: "streak",
+      text: streak > 0 ? `🔥 You're on a ${streak} day streak! Keep it up!` : "💪 Ready to start a new streak? Consistency is key to DECA success!",
+    }
+  ];
+
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* Welcome */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">
-            Welcome back{session?.user?.name ? `, ${session.user.name.split(" ")[0]}` : ""}
-          </h1>
-          <p className="text-muted-foreground text-[13px] mt-0.5">
-            Here&apos;s your DECA competition overview
-          </p>
-        </div>
-        <Button asChild className="shrink-0 self-start sm:self-auto">
-          <Link href="/projects/new">
-            <Plus className="h-4 w-4 mr-1" />
-            New Project
-          </Link>
-        </Button>
-      </div>
+    <>
+      <div className="space-y-8 max-w-6xl mx-auto">
+        {/* Nex Welcome Card */}
+        <NexWelcome
+          userName={session?.user?.name || undefined}
+          projectCount={projects.length}
+          currentStreak={streak}
+        />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statItems.map((stat) => (
-          <div key={stat.label} className="group relative flex items-center gap-3 p-4 border border-border/30 bg-card/30 backdrop-blur-sm hover:border-border/50 transition-all duration-300">
-            <div className={`flex items-center justify-center w-10 h-10 ${stat.bg}`}>
+          <FloatingCard key={stat.label} className="group relative flex items-center gap-3 p-5">
+            <div className={`flex items-center justify-center w-11 h-11 rounded-xl ${stat.bg}`}>
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </div>
             <div>
               <p className="text-2xl font-bold tabular-nums leading-none">{stat.value}</p>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider mt-1">{stat.label}</p>
             </div>
-            {/* Corner accents */}
-            <div className={`absolute top-0 left-0 w-2 h-2 border-t border-l ${stat.accent}`} />
-            <div className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r ${stat.accent}`} />
-          </div>
+            {/* Gradient accent */}
+            <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stat.bg} opacity-[0.03] group-hover:opacity-[0.06] transition-opacity pointer-events-none`} />
+          </FloatingCard>
         ))}
       </div>
 
@@ -156,8 +193,8 @@ export default function DashboardPage() {
             </div>
 
             {projects.length === 0 ? (
-              <div className="relative flex flex-col items-center justify-center py-16 text-center border border-dashed border-border/40">
-                <div className="flex items-center justify-center w-14 h-14 bg-muted/30 mb-4">
+              <FloatingCard variant="ghost" className="relative flex flex-col items-center justify-center py-16 text-center border-dashed">
+                <div className="flex items-center justify-center w-14 h-14 bg-muted/30 rounded-xl mb-4">
                   <FolderOpen className="h-7 w-7 text-muted-foreground/60" />
                 </div>
                 <h3 className="font-semibold mb-1">No projects yet</h3>
@@ -165,56 +202,27 @@ export default function DashboardPage() {
                   Create your first DECA project to get started. Choose an event
                   and let AI help you build a winning submission.
                 </p>
-                <Button asChild>
+                <Button asChild className="rounded-full">
                   <Link href="/projects/new">
                     <Plus className="h-4 w-4 mr-1" />
                     Create Your First Project
                   </Link>
                 </Button>
-              </div>
+              </FloatingCard>
             ) : (
-              <div className="space-y-0.5">
+              <FloatingCard className="divide-y divide-border/30 p-0 overflow-hidden">
                 {projects.slice(0, 5).map((project: any) => (
-                  <Link
-                    key={project.id}
-                    href={`/projects/${project.id}`}
-                    className="group flex items-center justify-between p-3 -mx-3 hover:bg-accent/20 transition-all duration-200"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-[3px] h-8 shrink-0 ${project.status === "DRAFT" ? "bg-muted-foreground/20" : "bg-primary/50"}`} />
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <Badge variant="outline" className="text-[10px] rounded-sm px-1.5 border-border/50">
-                            {project.event?.code}
-                          </Badge>
-                          <Badge
-                            variant={project.status === "DRAFT" ? "secondary" : "default"}
-                            className="text-[10px] rounded-sm px-1.5"
-                          >
-                            {project.status}
-                          </Badge>
-                        </div>
-                        <p className="font-medium text-sm truncate">{project.title}</p>
-                        <p className="text-[11px] text-muted-foreground">{project.event?.name}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-                      {project.readinessScore != null && (
-                        <span className="font-mono text-[11px]">{project.readinessScore}%</span>
-                      )}
-                      <ArrowRight className="h-3.5 w-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </div>
-                  </Link>
+                  <ProjectListItem key={project.id} project={project} />
                 ))}
-                {projects.length > 5 && (
-                  <Button variant="ghost" className="w-full mt-2 text-[11px]" asChild>
-                    <Link href="/projects">
-                      View all {projects.length} projects
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </Link>
-                  </Button>
-                )}
-              </div>
+              </FloatingCard>
+            )}
+            {projects.length > 5 && (
+              <Button variant="ghost" className="w-full mt-2 text-[11px]" asChild>
+                <Link href="/projects">
+                  View all {projects.length} projects
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Link>
+              </Button>
             )}
           </section>
 
@@ -318,6 +326,11 @@ export default function DashboardPage() {
           </section>
         </div>
       </div>
-    </div>
+
+      </div>
+
+      {/* Nex Chatbot */}
+      <NexChatbot position="bottom-right" />
+    </>
   );
 }
