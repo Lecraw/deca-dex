@@ -534,21 +534,32 @@ export default function LandingPage() {
             <p className="text-muted-foreground mt-4 text-[15px]">One platform for every step of your DECA journey.</p>
           </div>
 
-          <div className="reveal-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border/30">
-            {features.map((f) => (
-              <div key={f.title} className="reveal group relative bg-background p-8 hover:bg-accent/20 transition-all duration-500 cursor-default h-full">
-                {/* Top scan line */}
-                <div className={`absolute top-0 left-0 w-0 h-px bg-gradient-to-r ${f.accent} group-hover:w-full transition-all duration-700 ease-out`} />
+          <div className="reveal-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((f, i) => (
+              <div 
+                key={f.title} 
+                className="reveal group relative rounded-2xl border border-border/50 bg-card/30 backdrop-blur-sm p-8 hover:bg-card/60 hover:border-primary/30 transition-all duration-500 overflow-hidden cursor-default shadow-sm hover:shadow-xl"
+              >
+                {/* Graphical Watermark Icon */}
+                <f.icon className="absolute -bottom-8 -right-8 w-40 h-40 text-foreground opacity-[0.03] group-hover:opacity-[0.08] group-hover:-rotate-12 group-hover:scale-110 transition-all duration-700" />
+                
+                {/* Ambient Interior Glow */}
+                <div className={`absolute -right-10 -top-10 w-48 h-48 bg-gradient-to-br ${f.accent} opacity-[0.05] group-hover:opacity-[0.15] rounded-full blur-3xl transition-opacity duration-500`} />
 
-                <div className={`inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br ${f.accent} mb-5`}>
-                  <f.icon className="h-4 w-4 text-white" />
+                {/* Top Highlight Trace */}
+                <div className="absolute top-0 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/40 transition-colors duration-700" />
+
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${f.accent} shadow-inner ring-1 ring-white/20 dark:ring-white/10`}>
+                      <f.icon className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="font-mono text-[10px] text-muted-foreground/30 font-bold uppercase tracking-[0.2em]">{String(i + 1).padStart(2, '0')}</span>
+                  </div>
+                  
+                  <h3 className="font-semibold text-[17px] mb-3 tracking-tight group-hover:text-primary transition-colors">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed drop-shadow-sm">{f.description}</p>
                 </div>
-                <h3 className="font-semibold text-[15px] mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
-
-                {/* Corner brackets on hover */}
-                <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
-                <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-primary/0 group-hover:border-primary/20 transition-all duration-500" />
               </div>
             ))}
           </div>
