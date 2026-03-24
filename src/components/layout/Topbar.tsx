@@ -38,10 +38,10 @@ export function Topbar() {
   const xpProgress = Math.min((xp / xpForNextLevel) * 100, 100);
 
   return (
-    <header className="flex items-center justify-between h-14 px-5 glass-panel border-t-0 border-x-0 rounded-none sticky top-0 z-40">
+    <header className="flex items-center justify-between h-14 px-5 border-b border-border/40 bg-background/60 backdrop-blur-2xl sticky top-0 z-40">
       <div className="flex items-center gap-2 md:hidden">
         <Sheet>
-          <SheetTrigger className="inline-flex items-center justify-center h-10 w-10 rounded-2xl glass-btn text-foreground transition-all active:scale-95">
+          <SheetTrigger className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors">
             <Menu className="h-5 w-5" />
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
@@ -59,36 +59,33 @@ export function Topbar() {
 
       <div className="flex items-center gap-4">
         {/* XP indicator */}
-        <div className="hidden sm:flex items-center gap-3 bg-black/5 dark:bg-white/5 px-4 py-1.5 rounded-full border border-border/10 backdrop-blur-md">
-          <span className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest">
+        <div className="hidden sm:flex items-center gap-3 bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
             Lv.{level}
           </span>
-          <div className="w-20 h-1.5 bg-foreground/10 rounded-full overflow-hidden relative">
-            <div 
-              className="absolute left-0 top-0 bottom-0 bg-primary"
-              style={{ width: `${xpProgress}%` }}
-            />
-          </div>
+          <Progress value={xpProgress} className="w-20 h-1.5 bg-muted-foreground/20" />
           <span className="text-[11px] font-bold text-primary">{xp} XP</span>
         </div>
 
         {/* Separator */}
-        <div className="hidden sm:block w-px h-5 border-r border-border/20" />
+        <div className="hidden sm:block w-px h-4 bg-border" />
 
         {/* Theme Toggle */}
-        <button
-          className="h-9 w-9 rounded-full glass-btn flex items-center justify-center active:scale-95 transition-transform"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full hover:bg-muted"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
-          <Sun className="h-[18px] w-[18px] hidden dark:block text-foreground/80" />
-          <Moon className="h-[18px] w-[18px] block dark:hidden text-foreground/80" />
-        </button>
+          <Sun className="h-4 w-4 hidden dark:block text-muted-foreground" />
+          <Moon className="h-4 w-4 block dark:hidden text-muted-foreground" />
+        </Button>
 
         {/* User Menu */}
         {session?.user ? (
           <DropdownMenu>
-            <DropdownMenuTrigger className="relative h-10 w-10 rounded-full inline-flex items-center justify-center hover:opacity-90 active:scale-95 transition-all outline-none">
-              <Avatar className="h-10 w-10 rounded-full glass-card p-[2px]">
+            <DropdownMenuTrigger className="relative h-8 w-8 rounded-full inline-flex items-center justify-center hover:opacity-80 transition-opacity">
+              <Avatar className="h-8 w-8 rounded-full ring-1 ring-border/50">
                 <AvatarImage
                   src={session.user.image || ""}
                   alt={session.user.name || ""}
