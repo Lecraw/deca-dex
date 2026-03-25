@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import anthropic from "@/lib/anthropic";
+import { anthropic } from "@/lib/anthropic";
 
 export async function POST(req: NextRequest) {
   try {

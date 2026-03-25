@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 import {
   Lightbulb,
   Presentation,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { SplineScene } from "@/components/ui/spline";
 import { Spotlight } from "@/components/ui/spotlight";
 import { FeatureCard } from "@/components/ui/feature-card";
@@ -382,6 +384,7 @@ export default function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
   const initReveal = useScrollReveal();
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
   useEffect(() => {
     const cleanup = initReveal(rootRef.current);
@@ -445,12 +448,10 @@ export default function LandingPage() {
                   <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-8 rounded-full px-4" asChild>
                     <Link href="/login">Sign In</Link>
                   </Button>
-                  <Button size="sm" className="h-8 text-[13px] rounded-full px-4 bg-primary hover:bg-primary/90" asChild>
-                    <Link href="/login">
-                      Get Started
-                      <ArrowRight className="ml-1 h-3 w-3" />
-                    </Link>
-                  </Button>
+                  <LiquidMetalButton
+                    label="Get Started"
+                    onClick={() => router.push('/login')}
+                  />
                 </div>
                 {/* Mobile menu button */}
                 <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden rounded-full">
@@ -499,12 +500,10 @@ export default function LandingPage() {
 
                   {/* CTAs */}
                   <div className="flex flex-col sm:flex-row items-start gap-3 mt-8">
-                    <Button size="lg" className="group h-11 px-7" asChild>
-                      <Link href="/login">
-                        Get Started
-                        <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                      </Link>
-                    </Button>
+                    <LiquidMetalButton
+                      label="Get Started"
+                      onClick={() => router.push('/login')}
+                    />
                     <Button size="lg" variant="neon" className="h-11 px-7" asChild>
                       <Link href="/events">Browse Events</Link>
                     </Button>
@@ -702,12 +701,12 @@ export default function LandingPage() {
               <p className="mt-4 text-muted-foreground max-w-md mx-auto text-[15px]">
                 Join students across the country using AI to build better projects faster.
               </p>
-              <Button size="lg" className="mt-8 group h-11 px-8" asChild>
-                <Link href="/login">
-                  Get Started Free
-                  <ArrowRight className="ml-1.5 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </Button>
+              <div className="mt-8">
+                <LiquidMetalButton
+                  label="Get Started Free"
+                  onClick={() => router.push('/login')}
+                />
+              </div>
             </div>
           </div>
         </section>

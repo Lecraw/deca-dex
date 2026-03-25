@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { LiquidMetalButton } from "@/components/ui/liquid-metal-button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { FloatingCard } from "@/components/ui/floating-card";
@@ -202,12 +203,10 @@ export default function DashboardPage() {
                   Create your first DECA project to get started. Choose an event
                   and let AI help you build a winning submission.
                 </p>
-                <Button asChild className="rounded-full">
-                  <Link href="/projects/new">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Create Your First Project
-                  </Link>
-                </Button>
+                <LiquidMetalButton
+                  label="Create Your First Project"
+                  onClick={() => router.push('/projects/new')}
+                />
               </FloatingCard>
             ) : (
               <FloatingCard className="divide-y divide-border/30 p-0 overflow-hidden">
