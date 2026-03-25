@@ -45,3 +45,6 @@ uploads/
 .claude/
 *.db
 *.db-journal
+
+# Local Netlify folder
+.netlify

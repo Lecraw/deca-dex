@@ -12,7 +12,7 @@ interface NexMessage {
   actions?: Array<{
     label: string;
     onClick: () => void;
-    variant?: "default" | "primary" | "outline";
+    variant?: "default" | "neon" | "outline";
   }>;
 }
 

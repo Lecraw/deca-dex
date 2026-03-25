@@ -115,7 +115,7 @@ export default function DashboardPage() {
         {
           label: "Start First Project",
           onClick: () => router.push("/projects/new"),
-          variant: "primary" as const
+          variant: "default" as const
         },
         {
           label: "Browse Events",
