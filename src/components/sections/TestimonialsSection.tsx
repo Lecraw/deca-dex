@@ -68,11 +68,6 @@ export const TestimonialsSection = () => {
           </div>
           <div className="w-px h-8 bg-border/30" />
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary">12,400+</div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wider">Happy Students</div>
-          </div>
-          <div className="w-px h-8 bg-border/30 hidden sm:block" />
-          <div className="text-center hidden sm:block">
             <div className="text-2xl font-bold text-primary">340+</div>
             <div className="text-xs text-muted-foreground uppercase tracking-wider">Competition Wins</div>
           </div>

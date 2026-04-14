@@ -79,7 +79,6 @@ const steps = [
 ];
 
 const impactStats = [
-  { value: 12400, suffix: "+", label: "Students Helped", icon: Users, sub: "across 380+ high schools" },
   { value: 87, suffix: "%", label: "Score Improvement", icon: TrendingUp, sub: "on judge rubrics" },
   { value: 2300, suffix: "+", label: "Projects Built", icon: Target, sub: "competition-ready" },
   { value: 340, suffix: "+", label: "Competition Wins", icon: Award, sub: "district to ICDC" },
@@ -199,7 +198,6 @@ function Particles() {
 const storyCards = [
   { category: "PERFORMANCE", title: "98% Uptime", desc: "Enterprise-grade reliability ensuring your preparation is never interrupted." },
   { category: "SPEED", title: "1.2s Response", desc: "Lightning-fast AI feedback so you can iterate and improve in real-time." },
-  { category: "COMMUNITY", title: "12,400+ Students", desc: "Trusted by DECA competitors across 380+ high schools nationwide." },
   { category: "COVERAGE", title: "50+ Events", desc: "Every DECA competitive event category fully supported and covered." },
   { category: "AI ENGINE", title: "Claude AI Powered", desc: "Anthropic's most capable AI model delivering competition-winning insights." },
   { category: "SECURITY", title: "256-bit Encryption", desc: "Bank-level data security protecting all your project work and ideas." },
@@ -512,10 +510,6 @@ export default function LandingPage() {
                   {/* Quick stats */}
                   <div className="flex items-center gap-8 mt-12 pt-8 border-t border-white/10">
                     <div>
-                      <div className="text-2xl font-bold text-white">12,400+</div>
-                      <div className="text-xs text-neutral-400 uppercase tracking-wider">Students</div>
-                    </div>
-                    <div>
                       <div className="text-2xl font-bold text-white">50+</div>
                       <div className="text-xs text-neutral-400 uppercase tracking-wider">Events</div>
                     </div>
@@ -656,7 +650,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="reveal-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-5">
+            <div className="reveal-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-5">
               {impactStats.map((stat) => (
                 <ImpactCard
                   key={stat.label}
