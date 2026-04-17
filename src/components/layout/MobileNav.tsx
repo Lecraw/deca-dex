@@ -44,7 +44,7 @@ export function MobileNav() {
             maskPosition: "center",
           }}
         />
-        <span className="font-bold text-lg">Nexari</span>
+        <span className="font-bold text-lg">DUZZ</span>
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">

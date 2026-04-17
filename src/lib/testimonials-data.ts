@@ -1,18 +1,18 @@
 export const testimonials = [
   {
-    text: "Nexari helped me build my entire business plan in just two weeks. The AI feedback was incredibly detailed and helped me win 1st at State!",
+    text: "DUZZ helped me build my entire business plan in just two weeks. The AI feedback was incredibly detailed and helped me win 1st at State!",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=Sarah",
     name: "Sarah Chen",
     role: "DECA State Champion - EIB",
   },
   {
-    text: "The pitch deck builder is amazing! I created professional slides that impressed the judges. Placed top 3 at ICDC thanks to Nexari.",
+    text: "The pitch deck builder is amazing! I created professional slides that impressed the judges. Placed top 3 at ICDC thanks to DUZZ.",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=Marcus",
     name: "Marcus Johnson",
     role: "ICDC Finalist - ESB",
   },
   {
-    text: "As a first-year competitor, Nexari made everything so much easier. The compliance checker saved me from missing critical requirements.",
+    text: "As a first-year competitor, DUZZ made everything so much easier. The compliance checker saved me from missing critical requirements.",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=Emily",
     name: "Emily Rodriguez",
     role: "Regional Winner - PMCD",
@@ -30,7 +30,7 @@ export const testimonials = [
     role: "State Winner - PMFL",
   },
   {
-    text: "Our entire chapter uses Nexari now. It's like having a personal DECA coach available 24/7. My scores improved by 30+ points!",
+    text: "Our entire chapter uses DUZZ now. It's like having a personal DECA coach available 24/7. My scores improved by 30+ points!",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=Ryan",
     name: "Ryan Kim",
     role: "Chapter President - California",
@@ -42,7 +42,7 @@ export const testimonials = [
     role: "State Qualifier - SMG",
   },
   {
-    text: "Nexari's gamification kept me motivated throughout the entire project. Earning XP made the preparation process actually fun!",
+    text: "DUZZ's gamification kept me motivated throughout the entire project. Earning XP made the preparation process actually fun!",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=David",
     name: "David Liu",
     role: "Regional Finalist - EIP",
@@ -54,7 +54,7 @@ export const testimonials = [
     role: "ICDC Qualifier - IMCE",
   },
   {
-    text: "I struggled with writing until I found Nexari. The section-by-section guidance helped me create a 30-page report that won Districts.",
+    text: "I struggled with writing until I found DUZZ. The section-by-section guidance helped me create a 30-page report that won Districts.",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=Jordan",
     name: "Jordan Williams",
     role: "District Winner - EBG",
@@ -66,7 +66,7 @@ export const testimonials = [
     role: "Team Leader - IMCP",
   },
   {
-    text: "Nexari turned my rough ideas into a polished, professional presentation. The judges were impressed by the quality of my work.",
+    text: "DUZZ turned my rough ideas into a polished, professional presentation. The judges were impressed by the quality of my work.",
     image: "https://api.dicebear.com/9.x/avataaars/svg?seed=Nathan",
     name: "Nathan Foster",
     role: "State Finalist - PMBS",

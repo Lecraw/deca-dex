@@ -29,10 +29,10 @@ export const TestimonialsSection = () => {
           </div>
 
           <h2 className="text-3xl md:text-5xl font-bold tracking-[-0.03em] mt-5 text-center">
-            Students Love Nexari
+            Students Love DUZZ
           </h2>
           <p className="text-center mt-4 text-muted-foreground text-[15px] max-w-md">
-            Join thousands of DECA competitors who've transformed their projects and won competitions with Nexari.
+            Join thousands of DECA competitors who've transformed their projects and won competitions with DUZZ.
           </p>
         </motion.div>
 

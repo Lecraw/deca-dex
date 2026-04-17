@@ -221,7 +221,7 @@ export default function PublicEventsPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 shrink-0" style={logoMaskStyle} />
-            <span className="font-bold text-xl tracking-tight">Nexari</span>
+            <span className="font-bold text-xl tracking-tight">DUZZ</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-[13px] text-muted-foreground">
@@ -502,11 +502,11 @@ export default function PublicEventsPage() {
               style={logoMaskStyle}
             />
             <span className="text-[11px] text-muted-foreground/60">
-              Nexari
+              DUZZ
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground/50">
-            Nexari is not affiliated with DECA Inc.
+            DUZZ is not affiliated with DECA Inc.
           </p>
         </div>
       </footer>

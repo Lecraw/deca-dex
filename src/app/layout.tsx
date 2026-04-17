@@ -22,7 +22,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nexari — AI-Powered DECA Competition Assistant",
+  title: "DUZZ — AI-Powered DECA Competition Assistant",
   description:
     "Build winning DECA competition projects with AI. From idea to pitch deck in one platform.",
 };
@@ -34,6 +34,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" {...{ suppressHydrationMismatch: true }}>
+      <head>
+        {/* Spline hero preconnect + preload — shaves first-paint blocking JS */}
+        <link
+          rel="preconnect"
+          href="https://prod.spline.design"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          as="fetch"
+          href="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${jakarta.variable} ${inter.variable} ${jetbrains.variable} antialiased`}
       >

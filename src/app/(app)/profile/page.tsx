@@ -250,7 +250,7 @@ function ApiTokensSection() {
           <Key className="h-4 w-4 text-primary" /> API Tokens
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Generate tokens for the Nexari browser extension
+          Generate tokens for the DUZZ browser extension
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
