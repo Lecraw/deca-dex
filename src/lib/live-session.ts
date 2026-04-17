@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const HOST_PASSWORD =
-  process.env.DUZZ_HOST_PASSWORD ?? "duzz-host-2026";
+  process.env.DUZZ_HOST_PASSWORD ?? "password123";
 
 const HMAC_KEY =
   (process.env.NEXTAUTH_SECRET ?? "duzz-live-fallback-secret") +
