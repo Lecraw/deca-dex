@@ -2,7 +2,7 @@
   external_node_modules = ["@prisma/client"]
 
 [build]
-  command = "npm run build"
+  command = "npx prisma migrate deploy && npm run build"
   publish = ".next"
 
 [[plugins]]
