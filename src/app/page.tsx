@@ -369,7 +369,7 @@ function LogoSpinSection() {
           <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.2em]">Scroll to explore</span>
         </div>
         <div className="absolute top-6 right-6 md:right-10">
-          <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.2em]">Nexari / Platform</span>
+          <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.2em]">DUZZ / Platform</span>
         </div>
       </div>
     </div>
@@ -412,7 +412,7 @@ export default function LandingPage() {
                     maskPosition: "center",
                   }}
                 />
-                <span className="font-bold text-lg tracking-tight">Nexari</span>
+                <span className="font-bold text-lg tracking-tight">DUZZ</span>
               </Link>
 
               <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
@@ -501,6 +501,10 @@ export default function LandingPage() {
                     <LiquidMetalButton
                       label="Get Started"
                       onClick={() => router.push('/login')}
+                    />
+                    <LiquidMetalButton
+                      label="Join Game"
+                      onClick={() => router.push('/play')}
                     />
                     <Button size="lg" variant="neon" className="h-11 px-7" asChild>
                       <Link href="/events">Browse Events</Link>
@@ -646,7 +650,7 @@ export default function LandingPage() {
                 Trusted by DECA Students Everywhere
               </h2>
               <p className="text-muted-foreground mt-4 text-[15px] max-w-md mx-auto">
-                Real results from students who used Nexari to prepare for competition.
+                Real results from students who used DUZZ to prepare for competition.
               </p>
             </div>
 
@@ -666,7 +670,7 @@ export default function LandingPage() {
             {/* Testimonial */}
             <div className="reveal mt-14 text-center">
               <blockquote className="text-muted-foreground italic max-w-lg mx-auto text-[15px] leading-relaxed">
-                &ldquo;Nexari helped me go from not knowing where to start to winning 1st place at States in my first year competing.&rdquo;
+                &ldquo;DUZZ helped me go from not knowing where to start to winning 1st place at States in my first year competing.&rdquo;
               </blockquote>
               <cite className="mt-3 block text-[11px] text-muted-foreground/60 not-italic uppercase tracking-wider">
                 DECA Chapter President, California
@@ -724,11 +728,19 @@ export default function LandingPage() {
                 maskPosition: "center",
               }}
             />
-            <span className="text-[11px] text-muted-foreground/60">Nexari</span>
+            <span className="text-[11px] text-muted-foreground/60">DUZZ</span>
           </div>
-          <p className="text-[11px] text-muted-foreground/50">
-            Nexari is not affiliated with DECA Inc.
-          </p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/host"
+              className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+            >
+              Host
+            </Link>
+            <p className="text-[11px] text-muted-foreground/50">
+              DUZZ is not affiliated with DECA Inc.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

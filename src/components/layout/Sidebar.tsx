@@ -59,7 +59,7 @@ export function Sidebar() {
             }}
           />
           {!collapsed && (
-            <span className="font-bold text-base tracking-tight">Nexari</span>
+            <span className="font-bold text-base tracking-tight">DUZZ</span>
           )}
           <Button
             variant="ghost"

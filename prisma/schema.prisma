@@ -361,3 +361,50 @@ model XpLog {
 
   @@index([userId, createdAt])
 }
+
+// ============================================
+// DUZZ LIVE (Kahoot-style live roleplay sessions)
+// ============================================
+
+model LiveSession {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  eventCode    String
+  scenarioJson String
+  status       String    @default("open")
+  createdAt    DateTime  @default(now())
+  closedAt     DateTime?
+
+  participants LiveParticipant[]
+
+  @@index([code])
+  @@index([status])
+}
+
+model LiveParticipant {
+  id           String    @id @default(cuid())
+  sessionId    String
+  email        String
+  displayName  String
+  messagesJson String?
+  scoreJson    String?
+  totalScore   Float?
+  completed    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  session LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, email])
+  @@index([sessionId])
+  @@index([email])
+}
+
+model RateLimitBucket {
+  id      String   @id @default(cuid())
+  key     String   @unique
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}

@@ -65,7 +65,7 @@ export function Topbar() {
                   maskPosition: "center",
                 }}
               />
-              <span className="font-bold text-sm tracking-tight">Nexari</span>
+              <span className="font-bold text-sm tracking-tight">DUZZ</span>
             </div>
           </div>
 

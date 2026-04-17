@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nexari (deca-dex) is a Next.js full-stack app that helps high school students build DECA competition projects using AI-powered tools. Features include idea generation, AI-assisted research documents, written reports, AI feedback, judge simulation, roleplay practice, compliance checking, and gamification (XP/badges/leaderboard).
+DUZZ (deca-dex) is a Next.js full-stack app that helps high school students build DECA competition projects using AI-powered tools. Features include idea generation, AI-assisted research documents, written reports, AI feedback, judge simulation, roleplay practice, compliance checking, and gamification (XP/badges/leaderboard).
 
 ## Commands
 

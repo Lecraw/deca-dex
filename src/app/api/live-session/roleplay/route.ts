@@ -1,0 +1,146 @@
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { readParticipant } from "@/lib/live-session";
+import { gradeRoleplay } from "@/lib/ai/live-roleplay";
+
+export async function GET(req: NextRequest) {
+  const auth = await readParticipant();
+  if (!auth) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const participantId = searchParams.get("participantId");
+
+  if (!participantId || participantId !== auth.participantId) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+  }
+
+  const participant = await prisma.liveParticipant.findUnique({
+    where: { id: participantId },
+    include: { session: true },
+  });
+
+  if (!participant) {
+    return new Response(JSON.stringify({ error: "Participant not found" }), { status: 404 });
+  }
+
+  const scenarioData = JSON.parse(participant.session.scenarioJson);
+  const messages = participant.messagesJson ? JSON.parse(participant.messagesJson) : [];
+  const score = participant.scoreJson ? JSON.parse(participant.scoreJson) : null;
+
+  return new Response(
+    JSON.stringify({
+      id: participant.id,
+      eventCode: participant.session.eventCode,
+      eventName: scenarioData.eventName || participant.session.eventCode,
+      eventCategory: scenarioData.eventCategory || "PRINCIPLES_EVENTS",
+      scenario: scenarioData.scenario,
+      performanceIndicators: scenarioData.performanceIndicators || [],
+      twentyFirstCenturySkills: scenarioData.twentyFirstCenturySkills || [],
+      judgeFollowUpQuestions: scenarioData.judgeFollowUpQuestions || [],
+      messages,
+      completed: participant.completed,
+      score,
+      sessionStatus: participant.session.status,
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  );
+}
+
+export async function POST(req: NextRequest) {
+  const auth = await readParticipant();
+  if (!auth) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
+  let body: { action?: string; fullTranscript?: string; participantId?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
+  }
+
+  const { action, fullTranscript, participantId } = body;
+  if (!participantId || participantId !== auth.participantId) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+  }
+
+  const participant = await prisma.liveParticipant.findUnique({
+    where: { id: participantId },
+    include: { session: true },
+  });
+
+  if (!participant) {
+    return new Response(JSON.stringify({ error: "Participant not found" }), { status: 404 });
+  }
+
+  if (action === "end_session") {
+    if (participant.completed) {
+      return new Response(JSON.stringify({ error: "Already submitted." }), { status: 409 });
+    }
+
+    const scenarioData = JSON.parse(participant.session.scenarioJson);
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const result = await gradeRoleplay(
+            {
+              eventCode: participant.session.eventCode,
+              eventName: scenarioData.eventName || participant.session.eventCode,
+              eventCategory: scenarioData.eventCategory || "PRINCIPLES_EVENTS",
+              scenario: scenarioData.scenario,
+              performanceIndicators: scenarioData.performanceIndicators || [],
+              fullTranscript: fullTranscript ?? "",
+            },
+            { controller, encoder }
+          );
+
+          if (!result) {
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({ error: "Failed to parse evaluation. Please try again." })
+              )
+            );
+            controller.close();
+            return;
+          }
+
+          await prisma.liveParticipant.update({
+            where: { id: participant.id },
+            data: {
+              messagesJson: JSON.stringify(
+                fullTranscript
+                  ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }]
+                  : []
+              ),
+              scoreJson: JSON.stringify(result),
+              totalScore: typeof result.totalScore === "number" ? result.totalScore : 0,
+              completed: true,
+              completedAt: new Date(),
+            },
+          });
+
+          controller.enqueue(encoder.encode(JSON.stringify(result)));
+          controller.close();
+        } catch (err) {
+          console.error("Live roleplay score error:", (err as Error).message);
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })
+            )
+          );
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
+    });
+  }
+
+  return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400 });
+}

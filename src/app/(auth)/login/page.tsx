@@ -125,7 +125,7 @@ function LoginContent() {
                 maskPosition: "center",
               }}
             />
-            <span className="font-bold text-lg tracking-tight">Nexari</span>
+            <span className="font-bold text-lg tracking-tight">DUZZ</span>
           </div>
 
           <div className="space-y-8 max-w-md">
@@ -178,7 +178,7 @@ function LoginContent() {
                 maskPosition: "center",
               }}
             />
-            <span className="font-bold text-xl">Nexari</span>
+            <span className="font-bold text-xl">DUZZ</span>
           </div>
 
           <div className="space-y-2 text-center">
@@ -188,7 +188,7 @@ function LoginContent() {
             <p className="text-sm text-muted-foreground">
               {isRegister
                 ? "Start building your DECA project today"
-                : "Sign in to continue to Nexari"}
+                : "Sign in to continue to DUZZ"}
             </p>
           </div>
 
