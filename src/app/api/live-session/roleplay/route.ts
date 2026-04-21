@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       scenario: scenarioData.scenario,
       performanceIndicators: scenarioData.performanceIndicators || [],
       twentyFirstCenturySkills: scenarioData.twentyFirstCenturySkills || [],
-      judgeFollowUpQuestions: scenarioData.judgeFollowUpQuestions || [],
+      judgeFollowUpQuestions: (scenarioData.judgeFollowUpQuestions || []).slice(0, 2),
       messages,
       completed: participant.completed,
       score,
@@ -78,6 +78,12 @@ export async function POST(req: NextRequest) {
   if (action === "end_session") {
     if (participant.completed) {
       return new Response(JSON.stringify({ error: "Already submitted." }), { status: 409 });
+    }
+    if (participant.session.status !== "open") {
+      return new Response(
+        JSON.stringify({ error: "This session has been closed by the host." }),
+        { status: 409 }
+      );
     }
 
     const scenarioData = JSON.parse(participant.session.scenarioJson);
@@ -126,10 +132,11 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(JSON.stringify(result)));
           controller.close();
         } catch (err) {
-          console.error("Live roleplay score error:", (err as Error).message);
+          const message = (err as Error).message || "unknown error";
+          console.error("Live roleplay score error:", message, err);
           controller.enqueue(
             encoder.encode(
-              JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })
+              JSON.stringify({ error: `Scoring failed: ${message}` })
             )
           );
           controller.close();

@@ -108,7 +108,7 @@ export async function generateScenario(
   let fullText = "";
 
   const messageStream = client.messages.stream({
-    model: "claude-3-haiku-20240307",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 2048,
     system: `You are a DECA competition scenario generator for the ${event.name} (${event.code}) event.
 
@@ -116,12 +116,12 @@ This is a ${event.category.replace(/_/g, " ")} event in the ${event.cluster.repl
 
 Generate a realistic DECA roleplay scenario. Return ONLY a JSON object (no markdown, no code blocks) with this structure:
 
-{"scenario":"Full scenario text in 2nd person...","performanceIndicators":["PI 1","PI 2"${config.piCount > 2 ? ',...' : ''}],"judgeFollowUpQuestions":["Q1?","Q2?","Q3?"]}
+{"scenario":"Full scenario text in 2nd person...","performanceIndicators":["PI 1","PI 2"${config.piCount > 2 ? ',...' : ''}],"judgeFollowUpQuestions":["Q1?","Q2?"]}
 
 Requirements:
 - Scenario: 2-3 paragraphs, 2nd person ("You are to assume the role of..."), realistic business context, end with roleplay setup
 - Exactly ${config.piCount} performance indicators as action statements from the ${event.cluster.replace(/_/g, " ")} cluster
-- Exactly 3 follow-up questions`,
+- Exactly 2 follow-up questions`,
     messages: [
       {
         role: "user",
@@ -148,7 +148,7 @@ Requirements:
   return {
     scenario: parsed.scenario,
     performanceIndicators: parsed.performanceIndicators,
-    judgeFollowUpQuestions: parsed.judgeFollowUpQuestions ?? [],
+    judgeFollowUpQuestions: (parsed.judgeFollowUpQuestions ?? []).slice(0, 2),
     twentyFirstCenturySkills: config.twentyFirstCenturySkills,
     eventName: event.name,
     eventCategory: event.category,
@@ -203,7 +203,7 @@ export async function gradeRoleplay(
   let fullText = "";
 
   const messageStream = client.messages.stream({
-    model: "claude-3-haiku-20240307",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 2500,
     system: `You are a DECA judge evaluating a student's roleplay for ${params.eventName} (${params.eventCode}), a ${params.eventCategory.replace(/_/g, " ")} event.
 

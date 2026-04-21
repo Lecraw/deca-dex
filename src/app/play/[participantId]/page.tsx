@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CircleSlash } from "lucide-react";
 import {
   RoleplaySessionUI,
   type RoleplaySessionData,
@@ -30,6 +31,16 @@ export default function PlaySessionPage() {
     },
     retry: false,
   });
+
+  useEffect(() => {
+    // Only redirect once grading has actually finished (score is populated).
+    // While grading is in-flight, the backend temporarily marks `completed:true`
+    // to claim an atomic submission slot — redirecting on that intermediate
+    // state would ping-pong with the results page.
+    if (data?.completed && data.score) {
+      router.replace(`/play/${participantId}/results`);
+    }
+  }, [data?.completed, data?.score, participantId, router]);
 
   const onEndSession = async (fullTranscript: string): Promise<RoleplayScore> => {
     const res = await fetch("/api/live-session/roleplay", {
@@ -61,6 +72,27 @@ export default function PlaySessionPage() {
           <Button asChild>
             <Link href="/play">
               <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to Join
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (data && !data.completed && data.sessionStatus !== "open") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-sm text-center space-y-4">
+          <CircleSlash className="h-10 w-10 text-muted-foreground mx-auto" />
+          <div className="space-y-1">
+            <p className="text-base font-semibold">This session has ended</p>
+            <p className="text-sm text-muted-foreground">
+              The host has closed this session, so new submissions aren&apos;t accepted.
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> Home
             </Link>
           </Button>
         </div>

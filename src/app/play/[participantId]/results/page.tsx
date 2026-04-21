@@ -101,7 +101,38 @@ export default function ResultsPage() {
     );
   }
 
-  if (!session || !session.score) {
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-sm text-center space-y-4">
+          <p className="text-sm text-muted-foreground">
+            We couldn&apos;t load your results.
+          </p>
+          <Button asChild>
+            <Link href="/">Home</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session.score) {
+    // Two states collapse here:
+    //  - Participant never finished (completed:false) → send them back in.
+    //  - Grading is in-flight (completed:true + score:null) → show a
+    //    "scoring" loader so they don't bounce back to the play page.
+    if (session.completed) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+          <div className="max-w-sm text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              The judge is scoring your roleplay…
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="max-w-sm text-center space-y-4">
