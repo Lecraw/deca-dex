@@ -24,7 +24,16 @@ export async function GET(_req: NextRequest, ctx: RouteParams) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const scenario = JSON.parse(session.scenarioJson);
+  let scenario: {
+    eventName?: string;
+    scenario?: string;
+    performanceIndicators?: string[];
+  } = {};
+  try {
+    scenario = JSON.parse(session.scenarioJson);
+  } catch {
+    // corrupted scenarioJson — keep going with empty fallback
+  }
 
   return NextResponse.json({
     id: session.id,
@@ -33,8 +42,8 @@ export async function GET(_req: NextRequest, ctx: RouteParams) {
     status: session.status,
     createdAt: session.createdAt,
     closedAt: session.closedAt,
-    eventName: scenario.eventName,
-    scenario: scenario.scenario,
+    eventName: scenario.eventName ?? session.eventCode,
+    scenario: scenario.scenario ?? "",
     performanceIndicators: scenario.performanceIndicators ?? [],
     participants: session.participants.map((p) => ({
       id: p.id,

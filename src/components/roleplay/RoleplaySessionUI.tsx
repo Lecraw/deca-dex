@@ -170,7 +170,7 @@ export function RoleplaySessionUI({
     };
   }, [phase]);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {
       setSpeechSupported(false);
@@ -185,6 +185,27 @@ export function RoleplaySessionUI({
     }
 
     setSpeechError(null);
+
+    // Explicitly request microphone access so the browser shows a permission
+    // prompt before speech recognition starts. Without this, some browsers
+    // start recognition silently and never surface the prompt.
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStream.getTracks().forEach((t) => t.stop());
+      } catch (err) {
+        const name = err instanceof Error ? err.name : "";
+        if (name === "NotAllowedError" || name === "SecurityError") {
+          setSpeechSupported(false);
+          setSpeechError("Microphone access was denied. Please allow microphone access in your browser settings and try again.");
+        } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+          setSpeechError("No microphone found. Please connect a microphone and try again.");
+        } else {
+          setSpeechError("Could not access the microphone. You can still type your response below.");
+        }
+        return;
+      }
+    }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
@@ -209,21 +230,26 @@ export function RoleplaySessionUI({
     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        recognitionRef.current = null;
+        setIsListening(false);
         setSpeechSupported(false);
         setSpeechError("Microphone access was denied. Please allow microphone access in your browser settings and try again.");
       } else if (event.error === "no-speech") {
         setSpeechError("No speech detected. Make sure your microphone is working and try speaking louder.");
       } else if (event.error === "audio-capture") {
+        recognitionRef.current = null;
+        setIsListening(false);
         setSpeechError("No microphone found. Please connect a microphone and try again.");
       }
     };
 
     recognition.onend = () => {
-      if (recognitionRef.current) {
+      if (recognitionRef.current === recognition) {
         try {
           recognition.start();
         } catch {
-          // ignore
+          recognitionRef.current = null;
+          setIsListening(false);
         }
       }
     };
@@ -235,8 +261,9 @@ export function RoleplaySessionUI({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error("Failed to start speech recognition:", err);
+      recognitionRef.current = null;
+      setIsListening(false);
       setSpeechError("Failed to start speech recognition: " + msg);
-      setSpeechSupported(false);
     }
   }, []);
 
@@ -351,6 +378,26 @@ export function RoleplaySessionUI({
         <Button variant="ghost" asChild className="mt-4">
           <Link href={backHref}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
         </Button>
+      </div>
+    );
+  }
+
+  if (sessionData.completed && sessionData.score && phase !== "results") {
+    return (
+      <div className="max-w-md mx-auto text-center py-16 space-y-4">
+        <CheckCircle2 className="h-10 w-10 text-primary mx-auto" />
+        <div className="space-y-1">
+          <p className="text-base font-semibold">You&apos;ve already finished this roleplay</p>
+          <p className="text-sm text-muted-foreground">Each roleplay can only be submitted once.</p>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Button variant="outline" asChild>
+            <Link href={backHref}><ArrowLeft className="h-4 w-4 mr-1.5" /> Back</Link>
+          </Button>
+          <Button asChild>
+            <Link href={newHref}><Sparkles className="h-4 w-4 mr-1.5" /> {newLabel}</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -576,7 +623,7 @@ export function RoleplaySessionUI({
               </Button>
             )}
             <Button
-              variant="outline"
+              variant={transcript.trim() ? "outline" : "default"}
               className="flex-1"
               onClick={handleFinishRoleplay}
               disabled={endSession.isPending || (!transcript.trim() && messages.length === 0)}
@@ -588,6 +635,13 @@ export function RoleplaySessionUI({
               )}
             </Button>
           </div>
+
+          {endSession.isError && (
+            <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{endSession.error instanceof Error ? endSession.error.message : "Failed to submit. Please try again."}</span>
+            </div>
+          )}
         </div>
       )}
 

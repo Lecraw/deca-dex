@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       scenario: scenarioData.scenario,
       performanceIndicators: scenarioData.performanceIndicators || [],
       twentyFirstCenturySkills: scenarioData.twentyFirstCenturySkills || [],
-      judgeFollowUpQuestions: scenarioData.judgeFollowUpQuestions || [],
+      judgeFollowUpQuestions: (scenarioData.judgeFollowUpQuestions || []).slice(0, 2),
       messages,
       completed: roleplaySession.completed,
       score,
@@ -99,8 +99,9 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(JSON.stringify({ sessionId: roleplaySession.id })));
           controller.close();
         } catch (err) {
-          console.error("Roleplay start error:", (err as Error).message);
-          controller.enqueue(encoder.encode(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })));
+          const message = (err as Error).message || "unknown error";
+          console.error("Roleplay start error:", message, err);
+          controller.enqueue(encoder.encode(JSON.stringify({ error: `Failed to create session: ${message}` })));
           controller.close();
         }
       },
@@ -170,8 +171,9 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(JSON.stringify(result)));
           controller.close();
         } catch (err) {
-          console.error("Roleplay score error:", (err as Error).message);
-          controller.enqueue(encoder.encode(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." })));
+          const message = (err as Error).message || "unknown error";
+          console.error("Roleplay score error:", message, err);
+          controller.enqueue(encoder.encode(JSON.stringify({ error: `Scoring failed: ${message}` })));
           controller.close();
         }
       },

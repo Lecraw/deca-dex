@@ -86,7 +86,6 @@ export function HostDashboard() {
 
   const createSession = useMutation({
     mutationFn: async (eventCode: string) => {
-      setCreating(eventCode);
       const res = await fetch("/api/host/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -175,7 +174,11 @@ export function HostDashboard() {
                         type="button"
                         className="text-left border rounded-lg p-3 hover:border-primary/60 hover:bg-accent/30 transition disabled:opacity-60"
                         disabled={!!creating}
-                        onClick={() => createSession.mutate(ev.code)}
+                        onClick={() => {
+                          if (creating) return;
+                          setCreating(ev.code);
+                          createSession.mutate(ev.code);
+                        }}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <Badge variant="outline" className="text-xs">{ev.code}</Badge>

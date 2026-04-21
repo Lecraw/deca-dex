@@ -108,9 +108,12 @@ export async function POST(req: NextRequest) {
         );
         controller.close();
       } catch (err) {
-        console.error("Host create-session error:", (err as Error).message);
+        const message = (err as Error).message || "unknown error";
+        console.error("Host create-session error:", message, err);
         controller.enqueue(
-          encoder.encode(JSON.stringify({ error: "Failed to create session. Please try again." }))
+          encoder.encode(
+            JSON.stringify({ error: `Failed to create session: ${message}` })
+          )
         );
         controller.close();
       }
