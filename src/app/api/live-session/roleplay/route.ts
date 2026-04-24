@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { readParticipant } from "@/lib/live-session";
-import { gradeRoleplay } from "@/lib/ai/live-roleplay";
+import {
+  gradeRoleplay,
+  generateQuiz,
+  gradeQuiz,
+  sanitizeQuiz,
+  type QuizQuestion,
+} from "@/lib/ai/live-roleplay";
 
 export async function GET(req: NextRequest) {
   const auth = await readParticipant();
@@ -88,11 +94,16 @@ export async function POST(req: NextRequest) {
 
     const scenarioData = JSON.parse(participant.session.scenarioJson);
 
+    const event = await prisma.decaEvent.findUnique({
+      where: { code: participant.session.eventCode },
+      select: { code: true, name: true, cluster: true, description: true },
+    });
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const result = await gradeRoleplay(
+          const grade = await gradeRoleplay(
             {
               eventCode: participant.session.eventCode,
               eventName: scenarioData.eventName || participant.session.eventCode,
@@ -104,10 +115,54 @@ export async function POST(req: NextRequest) {
             { controller, encoder }
           );
 
-          if (!result) {
+          if (!grade) {
             controller.enqueue(
               encoder.encode(
                 JSON.stringify({ error: "Failed to parse evaluation. Please try again." })
+              )
+            );
+            controller.close();
+            return;
+          }
+
+          // Reuse a cached quiz if the participant already has one (refresh after
+          // first end_session call). Otherwise, generate a fresh batch.
+          let quiz: QuizQuestion[] | null = null;
+          if (participant.quizQuestionsJson) {
+            try {
+              quiz = JSON.parse(participant.quizQuestionsJson) as QuizQuestion[];
+            } catch {
+              quiz = null;
+            }
+          }
+          if (!quiz && event) {
+            quiz = await generateQuiz(event);
+          }
+          if (!quiz) {
+            // Fall back: if quiz generation fails, mark quiz complete with a 0-question
+            // quiz so the participant isn't stranded. Treat the roleplay as the full
+            // score (no quiz penalty).
+            await prisma.liveParticipant.update({
+              where: { id: participant.id },
+              data: {
+                messagesJson: JSON.stringify(
+                  fullTranscript
+                    ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }]
+                    : []
+                ),
+                scoreJson: JSON.stringify(grade),
+                roleplayScore: typeof grade.totalScore === "number" ? grade.totalScore : 0,
+                quizQuestionsJson: JSON.stringify([]),
+                quizAnswersJson: JSON.stringify([]),
+                quizScore: 0,
+                totalScore: typeof grade.totalScore === "number" ? grade.totalScore : 0,
+                completed: true,
+                completedAt: new Date(),
+              },
+            });
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({ ...grade, quizQuestions: [] })
               )
             );
             controller.close();
@@ -122,14 +177,19 @@ export async function POST(req: NextRequest) {
                   ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }]
                   : []
               ),
-              scoreJson: JSON.stringify(result),
-              totalScore: typeof result.totalScore === "number" ? result.totalScore : 0,
-              completed: true,
-              completedAt: new Date(),
+              scoreJson: JSON.stringify(grade),
+              roleplayScore: typeof grade.totalScore === "number" ? grade.totalScore : 0,
+              quizQuestionsJson: JSON.stringify(quiz),
+              // Intentionally NOT setting: totalScore, completed, completedAt.
+              // Those are set when the quiz is submitted via submit_quiz.
             },
           });
 
-          controller.enqueue(encoder.encode(JSON.stringify(result)));
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({ ...grade, quizQuestions: sanitizeQuiz(quiz) })
+            )
+          );
           controller.close();
         } catch (err) {
           const message = (err as Error).message || "unknown error";
