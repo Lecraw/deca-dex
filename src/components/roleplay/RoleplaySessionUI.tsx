@@ -702,6 +702,107 @@ export function RoleplaySessionUI({
         </div>
       )}
 
+      {/* QUIZ */}
+      {phase === "quiz" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> Knowledge Check
+              </CardTitle>
+              <CardDescription>
+                Answer all 10 questions. Your quiz score averages with your roleplay
+                score to determine your final ranking.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>
+                  {quizAnswers.filter((a) => a !== null).length} of {quizQuestions.length} answered
+                </span>
+                <Progress
+                  value={
+                    quizQuestions.length === 0
+                      ? 0
+                      : (quizAnswers.filter((a) => a !== null).length / quizQuestions.length) * 100
+                  }
+                  className="h-2 flex-1"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {quizQuestions.map((q, qi) => (
+            <Card key={qi}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">
+                  <span className="text-muted-foreground mr-2">{qi + 1}.</span>
+                  {q.prompt}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-2">
+                  {q.options.map((opt, oi) => {
+                    const selected = quizAnswers[qi] === oi;
+                    return (
+                      <button
+                        key={oi}
+                        type="button"
+                        onClick={() =>
+                          setQuizAnswers((prev) => {
+                            const next = [...prev];
+                            next[qi] = oi;
+                            return next;
+                          })
+                        }
+                        className={`text-left rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                          selected
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border bg-muted/30 text-foreground/80 hover:bg-muted/60"
+                        }`}
+                      >
+                        <span className="inline-block w-5 font-mono text-xs text-muted-foreground">
+                          {String.fromCharCode(65 + oi)}.
+                        </span>
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {submitQuiz.isError && (
+            <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>
+                {submitQuiz.error instanceof Error
+                  ? submitQuiz.error.message
+                  : "Failed to submit quiz. Please try again."}
+              </span>
+            </div>
+          )}
+
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={
+              submitQuiz.isPending ||
+              quizAnswers.some((a) => a === null) ||
+              quizQuestions.length === 0
+            }
+            onClick={() => submitQuiz.mutate(quizAnswers.filter((a): a is number => a !== null))}
+          >
+            {submitQuiz.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting…</>
+            ) : (
+              <><CheckCircle2 className="h-4 w-4 mr-2" /> Submit Quiz &amp; Get Final Score</>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* RESULTS */}
       {phase === "results" && score && (
         <div className="space-y-4">
