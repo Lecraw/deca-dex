@@ -35,6 +35,18 @@ export async function GET(req: NextRequest) {
   const messages = participant.messagesJson ? JSON.parse(participant.messagesJson) : [];
   const score = participant.scoreJson ? JSON.parse(participant.scoreJson) : null;
 
+  let quizQuestions: ReturnType<typeof sanitizeQuiz> | null = null;
+  if (participant.quizQuestionsJson) {
+    try {
+      const raw = JSON.parse(participant.quizQuestionsJson);
+      if (Array.isArray(raw) && raw.length > 0) {
+        quizQuestions = sanitizeQuiz(raw as QuizQuestion[]);
+      }
+    } catch {
+      quizQuestions = null;
+    }
+  }
+
   return new Response(
     JSON.stringify({
       id: participant.id,
@@ -48,6 +60,8 @@ export async function GET(req: NextRequest) {
       messages,
       completed: participant.completed,
       score,
+      quizQuestions,
+      quizSubmitted: !!participant.quizAnswersJson,
       sessionStatus: participant.session.status,
     }),
     { headers: { "Content-Type": "application/json" } }
@@ -60,14 +74,19 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  let body: { action?: string; fullTranscript?: string; participantId?: string };
+  let body: {
+    action?: string;
+    fullTranscript?: string;
+    participantId?: string;
+    answers?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
     return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
   }
 
-  const { action, fullTranscript, participantId } = body;
+  const { action, fullTranscript, participantId, answers } = body;
   if (!participantId || participantId !== auth.participantId) {
     return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
   }
@@ -207,6 +226,69 @@ export async function POST(req: NextRequest) {
     return new Response(stream, {
       headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
     });
+  }
+
+  if (action === "submit_quiz") {
+    if (participant.completed) {
+      return new Response(JSON.stringify({ error: "Already submitted." }), { status: 409 });
+    }
+    if (!participant.quizQuestionsJson || participant.roleplayScore == null) {
+      return new Response(
+        JSON.stringify({ error: "Quiz not ready. Finish the roleplay first." }),
+        { status: 409 }
+      );
+    }
+    if (
+      !Array.isArray(answers) ||
+      answers.length !== 10 ||
+      !answers.every((a) => typeof a === "number" && a >= 0 && a <= 3)
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Submit exactly 10 answers, each 0-3." }),
+        { status: 400 }
+      );
+    }
+
+    let questions: QuizQuestion[];
+    try {
+      questions = JSON.parse(participant.quizQuestionsJson) as QuizQuestion[];
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Quiz data corrupted. Please refresh." }),
+        { status: 500 }
+      );
+    }
+    if (questions.length !== 10) {
+      return new Response(
+        JSON.stringify({ error: "Quiz data corrupted. Please refresh." }),
+        { status: 500 }
+      );
+    }
+
+    const roleplayScore = participant.roleplayScore ?? 0;
+    const { quizScore, correctAnswers } = gradeQuiz(questions, answers as number[]);
+    const totalScore = Math.round(((roleplayScore + quizScore) / 2) * 10) / 10;
+
+    await prisma.liveParticipant.update({
+      where: { id: participant.id },
+      data: {
+        quizAnswersJson: JSON.stringify(answers),
+        quizScore,
+        totalScore,
+        completed: true,
+        completedAt: new Date(),
+      },
+    });
+
+    return new Response(
+      JSON.stringify({
+        roleplayScore,
+        quizScore,
+        totalScore,
+        correctAnswers,
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   }
 
   return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400 });
