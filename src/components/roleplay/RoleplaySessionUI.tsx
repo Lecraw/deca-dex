@@ -28,6 +28,11 @@ export interface RoleplayMessage {
   timestamp: string;
 }
 
+export interface QuizQuestionView {
+  prompt: string;
+  options: [string, string, string, string];
+}
+
 export interface RoleplaySessionData {
   id: string;
   eventCode: string;
@@ -40,6 +45,8 @@ export interface RoleplaySessionData {
   messages: RoleplayMessage[];
   completed: boolean;
   score: RoleplayScore | null;
+  quizQuestions?: QuizQuestionView[] | null;
+  quizSubmitted?: boolean;
 }
 
 export interface RoleplayScore {
@@ -59,19 +66,28 @@ export interface RoleplayScore {
   }>;
   strengths?: string[];
   improvements?: string[];
+  quizQuestions?: QuizQuestionView[];
+}
+
+export interface QuizResult {
+  roleplayScore: number;
+  quizScore: number;
+  totalScore: number;
+  correctAnswers: number[];
 }
 
 interface Props {
   sessionData: RoleplaySessionData | undefined;
   isLoading: boolean;
   onEndSession: (fullTranscript: string) => Promise<RoleplayScore>;
+  onSubmitQuiz?: (answers: number[]) => Promise<QuizResult>;
   backHref: string;
   newHref: string;
   newLabel?: string;
   headerSubtitle?: string;
 }
 
-type Phase = "prep" | "presenting" | "followup" | "results";
+type Phase = "prep" | "presenting" | "followup" | "quiz" | "results";
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -107,6 +123,7 @@ export function RoleplaySessionUI({
   sessionData,
   isLoading,
   onEndSession,
+  onSubmitQuiz,
   backHref,
   newHref,
   newLabel = "New Roleplay",
@@ -122,6 +139,9 @@ export function RoleplaySessionUI({
   const [followUpIndex, setFollowUpIndex] = useState(0);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionView[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>([]);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -169,6 +189,21 @@ export function RoleplaySessionUI({
       if (presentTimerRef.current) clearInterval(presentTimerRef.current);
     };
   }, [phase]);
+
+  // If the server has a cached quiz (user refreshed mid-quiz), hydrate state.
+  useEffect(() => {
+    if (
+      sessionData?.quizQuestions &&
+      sessionData.quizQuestions.length > 0 &&
+      !sessionData.quizSubmitted &&
+      phase !== "quiz" &&
+      phase !== "results"
+    ) {
+      setQuizQuestions(sessionData.quizQuestions);
+      setQuizAnswers(new Array(sessionData.quizQuestions.length).fill(null));
+      setPhase("quiz");
+    }
+  }, [sessionData?.quizQuestions, sessionData?.quizSubmitted, phase]);
 
   const startListening = useCallback(async () => {
     const SpeechRecognition = getSpeechRecognition();
@@ -278,7 +313,19 @@ export function RoleplaySessionUI({
 
   const endSession = useMutation({
     mutationFn: (fullTranscript: string) => onEndSession(fullTranscript),
-    onSuccess: () => setPhase("results"),
+  });
+
+  const submitQuiz = useMutation({
+    mutationFn: async (answers: number[]) => {
+      if (!onSubmitQuiz) {
+        throw new Error("Quiz submission is not available for this session.");
+      }
+      return onSubmitQuiz(answers);
+    },
+    onSuccess: (result) => {
+      setQuizResult(result);
+      setPhase("results");
+    },
   });
 
   const handleStartPresenting = () => {
@@ -354,7 +401,17 @@ export function RoleplaySessionUI({
     setInterimTranscript("");
 
     const fullTranscript = allMsgs.map((m) => `${m.role}: ${m.content}`).join("\n\n");
-    endSession.mutate(fullTranscript);
+    endSession.mutate(fullTranscript, {
+      onSuccess: (score) => {
+        if (onSubmitQuiz && score.quizQuestions && score.quizQuestions.length > 0) {
+          setQuizQuestions(score.quizQuestions);
+          setQuizAnswers(new Array(score.quizQuestions.length).fill(null));
+          setPhase("quiz");
+        } else {
+          setPhase("results");
+        }
+      },
+    });
   };
 
   const formatTime = (seconds: number) => {
