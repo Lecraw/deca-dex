@@ -382,16 +382,20 @@ model LiveSession {
 }
 
 model LiveParticipant {
-  id           String    @id @default(cuid())
-  sessionId    String
-  email        String
-  displayName  String
-  messagesJson String?
-  scoreJson    String?
-  totalScore   Float?
-  completed    Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  completedAt  DateTime?
+  id                String    @id @default(cuid())
+  sessionId         String
+  email             String
+  displayName       String
+  messagesJson      String?
+  scoreJson         String?
+  roleplayScore     Float?
+  quizQuestionsJson String?
+  quizAnswersJson   String?
+  quizScore         Float?
+  totalScore        Float?
+  completed         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
 
   session LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
