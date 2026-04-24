@@ -804,22 +804,56 @@ export function RoleplaySessionUI({
       )}
 
       {/* RESULTS */}
-      {phase === "results" && score && (
+      {phase === "results" && (score || quizResult) && (
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-5xl font-bold">
-                {score.totalScore}
-                <span className="text-2xl text-muted-foreground">/100</span>
-              </CardTitle>
-              <CardDescription>Roleplay Performance Score</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Progress value={score.totalScore} className="h-3" />
-            </CardContent>
-          </Card>
+          {quizResult ? (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-5xl font-bold">
+                  {quizResult.totalScore}
+                  <span className="text-2xl text-muted-foreground">/100</span>
+                </CardTitle>
+                <CardDescription>Final Combined Score</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Progress value={quizResult.totalScore} className="h-3" />
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="text-xs text-muted-foreground">Roleplay</p>
+                    <p className="text-2xl font-semibold mt-0.5">
+                      {quizResult.roleplayScore}
+                      <span className="text-sm text-muted-foreground">/100</span>
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="text-xs text-muted-foreground">Quiz</p>
+                    <p className="text-2xl font-semibold mt-0.5">
+                      {quizResult.quizScore}
+                      <span className="text-sm text-muted-foreground">/100</span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Final score is the average of your roleplay and quiz scores.
+                </p>
+              </CardContent>
+            </Card>
+          ) : score ? (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-5xl font-bold">
+                  {score.totalScore}
+                  <span className="text-2xl text-muted-foreground">/100</span>
+                </CardTitle>
+                <CardDescription>Roleplay Performance Score</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Progress value={score.totalScore} className="h-3" />
+              </CardContent>
+            </Card>
+          ) : null}
 
-          {score.overallFeedback && (
+          {score?.overallFeedback && (
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm">{score.overallFeedback}</p>
@@ -827,7 +861,7 @@ export function RoleplaySessionUI({
             </Card>
           )}
 
-          {score.piScores && score.piScores.length > 0 && (
+          {score?.piScores && score.piScores.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -859,7 +893,7 @@ export function RoleplaySessionUI({
             </Card>
           )}
 
-          {score.twentyFirstCenturyScores && score.twentyFirstCenturyScores.length > 0 && (
+          {score?.twentyFirstCenturyScores && score.twentyFirstCenturyScores.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -880,42 +914,112 @@ export function RoleplaySessionUI({
             </Card>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {score && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-green-500" /> Strengths
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {(score?.strengths || []).map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-green-500 shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-yellow-500" /> Areas to Improve
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {(score?.improvements || []).map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-yellow-500 shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {quizResult && quizQuestions.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" /> Strengths
+                  <Sparkles className="h-4 w-4 text-primary" /> Quiz Review
                 </CardTitle>
+                <CardDescription>
+                  You got {quizResult.correctAnswers.filter((c, i) => quizAnswers[i] === c).length} of{" "}
+                  {quizQuestions.length} correct.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {(score.strengths || []).map((s, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-green-500 shrink-0" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
+              <CardContent className="space-y-4">
+                {quizQuestions.map((q, qi) => {
+                  const correct = quizResult.correctAnswers[qi];
+                  const chosen = quizAnswers[qi];
+                  const isRight = chosen === correct;
+                  return (
+                    <div key={qi} className="space-y-2">
+                      <div className="flex items-start gap-2">
+                        {isRight ? (
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
+                        )}
+                        <p className="text-sm font-medium">
+                          <span className="text-muted-foreground mr-1">{qi + 1}.</span>
+                          {q.prompt}
+                        </p>
+                      </div>
+                      <div className="space-y-1 ml-6">
+                        {q.options.map((opt, oi) => {
+                          const isCorrect = oi === correct;
+                          const isChosen = oi === chosen;
+                          const cls = isCorrect
+                            ? "border-green-500/60 bg-green-500/10"
+                            : isChosen
+                            ? "border-red-500/60 bg-red-500/10"
+                            : "border-border bg-muted/20";
+                          return (
+                            <div
+                              key={oi}
+                              className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-xs ${cls}`}
+                            >
+                              <span className="font-mono text-muted-foreground w-4">
+                                {String.fromCharCode(65 + oi)}.
+                              </span>
+                              <span className="flex-1">{opt}</span>
+                              {isCorrect && (
+                                <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
+                                  Correct
+                                </span>
+                              )}
+                              {isChosen && !isCorrect && (
+                                <span className="text-[10px] font-semibold text-red-600 dark:text-red-400">
+                                  Your answer
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-yellow-500" /> Areas to Improve
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {(score.improvements || []).map((s, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-yellow-500 shrink-0" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
+          )}
 
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" asChild>
