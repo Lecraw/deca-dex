@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/providers";
@@ -25,6 +25,12 @@ export const metadata: Metadata = {
   title: "DUZZ — AI-Powered DECA Competition Assistant",
   description:
     "Build winning DECA competition projects with AI. From idea to pitch deck in one platform.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
