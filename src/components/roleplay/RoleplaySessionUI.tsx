@@ -139,6 +139,7 @@ export function RoleplaySessionUI({
   const [prepTimeLeft, setPrepTimeLeft] = useState(600);
   const [presentTimeLeft, setPresentTimeLeft] = useState(600);
   const [followUpIndex, setFollowUpIndex] = useState(0);
+  const [roleplayConcluded, setRoleplayConcluded] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestionView[]>([]);
@@ -386,6 +387,8 @@ export function RoleplaySessionUI({
           setMessages((prev) => [...prev, judgeMsg]);
           setFollowUpIndex(1);
         }, 1000);
+      } else {
+        setRoleplayConcluded(true);
       }
     } else if (phase === "followup") {
       if (sessionData?.judgeFollowUpQuestions && followUpIndex < sessionData.judgeFollowUpQuestions.length) {
@@ -406,6 +409,7 @@ export function RoleplaySessionUI({
             timestamp: new Date().toISOString(),
           };
           setMessages((prev) => [...prev, judgeMsg]);
+          setRoleplayConcluded(true);
         }, 1000);
       }
     }
@@ -699,10 +703,16 @@ export function RoleplaySessionUI({
               variant={transcript.trim() ? "outline" : "default"}
               className="flex-1"
               onClick={handleFinishRoleplay}
-              disabled={endSession.isPending || (!transcript.trim() && messages.length === 0)}
+              disabled={
+                endSession.isPending ||
+                (!transcript.trim() && messages.length === 0) ||
+                (phase === "followup" && !roleplayConcluded)
+              }
             >
               {endSession.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scoring...</>
+              ) : phase === "followup" && !roleplayConcluded ? (
+                <><CheckCircle2 className="h-4 w-4 mr-2" /> Answer Judge&apos;s Questions First</>
               ) : (
                 <><CheckCircle2 className="h-4 w-4 mr-2" /> End &amp; Get Score</>
               )}
