@@ -66,6 +66,9 @@ export async function GET(req: NextRequest) {
       quizQuestions,
       quizSubmitted: !!participant.quizAnswersJson,
       sessionStatus: participant.session.status,
+      prepStartedAt: participant.session.prepStartedAt,
+      prepDurationSeconds: 600,
+      displayName: participant.displayName,
     }),
     { headers: { "Content-Type": "application/json" } }
   );
