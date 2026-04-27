@@ -16,7 +16,9 @@ import {
   Loader2,
   Trophy,
   Users,
+  Play,
 } from "lucide-react";
+import { Avatar } from "@/components/live/Avatar";
 
 const logoMaskStyle: React.CSSProperties = {
   background: "linear-gradient(135deg, oklch(0.52 0.20 255), oklch(0.36 0.16 260))",
@@ -48,6 +50,7 @@ type SessionDetail = {
   status: string;
   createdAt: string;
   closedAt: string | null;
+  prepStartedAt: string | null;
   scenario: string;
   performanceIndicators: string[];
   participants: Participant[];
@@ -79,6 +82,24 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["host-session", sessionId] });
       qc.invalidateQueries({ queryKey: ["host-sessions"] });
+    },
+  });
+
+  const startPrep = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/host/session/${sessionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start_prep" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to start prep");
+      }
+      return res.json();
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["host-session", sessionId] });
     },
   });
 
@@ -130,6 +151,25 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
                 <Download className="h-3.5 w-3.5 mr-1.5" /> CSV
               </a>
             </Button>
+            {open && !data.prepStartedAt && (
+              <Button
+                size="sm"
+                onClick={() => startPrep.mutate()}
+                disabled={startPrep.isPending || data.participants.length === 0}
+              >
+                {startPrep.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <><Play className="h-3.5 w-3.5 mr-1.5" /> Start Prep for Everyone</>
+                )}
+              </Button>
+            )}
+            {data.prepStartedAt && (
+              <Badge variant="outline" className="gap-1">
+                <Play className="h-3 w-3" /> Prep started{" "}
+                {new Date(data.prepStartedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </Badge>
+            )}
             {open && (
               <Button
                 size="sm"
@@ -147,6 +187,14 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
           </div>
         </div>
       </header>
+
+      {startPrep.isError && (
+        <div className="max-w-6xl mx-auto px-6 mt-4">
+          <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3">
+            {startPrep.error instanceof Error ? startPrep.error.message : "Failed to start prep."}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Code block */}
@@ -246,7 +294,12 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
                   <tbody>
                     {data.participants.map((p) => (
                       <tr key={p.id} className="border-b last:border-none">
-                        <td className="py-2 pr-3 font-medium">{p.displayName}</td>
+                        <td className="py-2 pr-3 font-medium">
+                          <div className="flex items-center gap-2">
+                            <Avatar seed={p.id} displayName={p.displayName} size="sm" />
+                            {p.displayName}
+                          </div>
+                        </td>
                         <td className="py-2 pr-3 text-muted-foreground">{p.email}</td>
                         <td className="py-2 pr-3">
                           {p.completed ? (
@@ -319,6 +372,7 @@ function ParticipantRow({ rank, participant }: { rank: number; participant: Part
       <span className="w-8 text-center font-semibold tabular-nums">
         {medal ?? `#${rank}`}
       </span>
+      <Avatar seed={participant.id} displayName={participant.displayName} size="sm" />
       <span className="flex-1 font-medium">{participant.displayName}</span>
       <span className="text-xs text-muted-foreground hidden sm:inline">{participant.email}</span>
       <span className="font-mono font-semibold tabular-nums">
