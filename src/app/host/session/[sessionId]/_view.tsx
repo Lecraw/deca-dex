@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -70,20 +70,6 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
     },
     refetchInterval: 5000,
   });
-
-  // Kick off scenario generation once when we see a session in "generating".
-  // The server endpoint is idempotent (no-op if already generated).
-  const triggeredGenerate = useRef(false);
-  useEffect(() => {
-    if (data?.status === "generating" && !triggeredGenerate.current) {
-      triggeredGenerate.current = true;
-      fetch(`/api/host/session/${sessionId}/generate`, { method: "POST" })
-        .catch(() => {})
-        .finally(() => {
-          qc.invalidateQueries({ queryKey: ["host-session", sessionId] });
-        });
-    }
-  }, [data?.status, sessionId, qc]);
 
   const closeSession = useMutation({
     mutationFn: async () => {
