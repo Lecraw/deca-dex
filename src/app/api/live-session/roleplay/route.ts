@@ -1,7 +1,14 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { readParticipant } from "@/lib/live-session";
-import { gradeRoleplay } from "@/lib/ai/live-roleplay";
+import { PREP_DURATION_SECONDS } from "@/lib/live-session-constants";
+import {
+  gradeRoleplay,
+  generateQuiz,
+  gradeQuiz,
+  sanitizeQuiz,
+  type QuizQuestion,
+} from "@/lib/ai/live-roleplay";
 
 export async function GET(req: NextRequest) {
   const auth = await readParticipant();
@@ -29,6 +36,18 @@ export async function GET(req: NextRequest) {
   const messages = participant.messagesJson ? JSON.parse(participant.messagesJson) : [];
   const score = participant.scoreJson ? JSON.parse(participant.scoreJson) : null;
 
+  let quizQuestions: ReturnType<typeof sanitizeQuiz> | null = null;
+  if (participant.quizQuestionsJson) {
+    try {
+      const raw = JSON.parse(participant.quizQuestionsJson);
+      if (Array.isArray(raw) && raw.length > 0) {
+        quizQuestions = sanitizeQuiz(raw as QuizQuestion[]);
+      }
+    } catch {
+      quizQuestions = null;
+    }
+  }
+
   return new Response(
     JSON.stringify({
       id: participant.id,
@@ -42,7 +61,15 @@ export async function GET(req: NextRequest) {
       messages,
       completed: participant.completed,
       score,
+      roleplayScore: participant.roleplayScore,
+      quizScore: participant.quizScore,
+      combinedTotalScore: participant.totalScore,
+      quizQuestions,
+      quizSubmitted: !!participant.quizAnswersJson,
       sessionStatus: participant.session.status,
+      prepStartedAt: participant.session.prepStartedAt,
+      prepDurationSeconds: PREP_DURATION_SECONDS,
+      displayName: participant.displayName,
     }),
     { headers: { "Content-Type": "application/json" } }
   );
@@ -54,14 +81,19 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  let body: { action?: string; fullTranscript?: string; participantId?: string };
+  let body: {
+    action?: string;
+    fullTranscript?: string;
+    participantId?: string;
+    answers?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
     return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
   }
 
-  const { action, fullTranscript, participantId } = body;
+  const { action, fullTranscript, participantId, answers } = body;
   if (!participantId || participantId !== auth.participantId) {
     return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
   }
@@ -88,11 +120,16 @@ export async function POST(req: NextRequest) {
 
     const scenarioData = JSON.parse(participant.session.scenarioJson);
 
+    const event = await prisma.decaEvent.findUnique({
+      where: { code: participant.session.eventCode },
+      select: { code: true, name: true, cluster: true, description: true },
+    });
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const result = await gradeRoleplay(
+          const grade = await gradeRoleplay(
             {
               eventCode: participant.session.eventCode,
               eventName: scenarioData.eventName || participant.session.eventCode,
@@ -104,10 +141,54 @@ export async function POST(req: NextRequest) {
             { controller, encoder }
           );
 
-          if (!result) {
+          if (!grade) {
             controller.enqueue(
               encoder.encode(
                 JSON.stringify({ error: "Failed to parse evaluation. Please try again." })
+              )
+            );
+            controller.close();
+            return;
+          }
+
+          // Reuse a cached quiz if the participant already has one (refresh after
+          // first end_session call). Otherwise, generate a fresh batch.
+          let quiz: QuizQuestion[] | null = null;
+          if (participant.quizQuestionsJson) {
+            try {
+              quiz = JSON.parse(participant.quizQuestionsJson) as QuizQuestion[];
+            } catch {
+              quiz = null;
+            }
+          }
+          if (!quiz && event) {
+            quiz = await generateQuiz(event);
+          }
+          if (!quiz) {
+            // Fall back: if quiz generation fails, mark quiz complete with a 0-question
+            // quiz so the participant isn't stranded. Treat the roleplay as the full
+            // score (no quiz penalty).
+            await prisma.liveParticipant.update({
+              where: { id: participant.id },
+              data: {
+                messagesJson: JSON.stringify(
+                  fullTranscript
+                    ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }]
+                    : []
+                ),
+                scoreJson: JSON.stringify(grade),
+                roleplayScore: typeof grade.totalScore === "number" ? grade.totalScore : 0,
+                quizQuestionsJson: JSON.stringify([]),
+                quizAnswersJson: JSON.stringify([]),
+                quizScore: 0,
+                totalScore: typeof grade.totalScore === "number" ? grade.totalScore : 0,
+                completed: true,
+                completedAt: new Date(),
+              },
+            });
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({ ...grade, quizQuestions: [] })
               )
             );
             controller.close();
@@ -122,14 +203,19 @@ export async function POST(req: NextRequest) {
                   ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }]
                   : []
               ),
-              scoreJson: JSON.stringify(result),
-              totalScore: typeof result.totalScore === "number" ? result.totalScore : 0,
-              completed: true,
-              completedAt: new Date(),
+              scoreJson: JSON.stringify(grade),
+              roleplayScore: typeof grade.totalScore === "number" ? grade.totalScore : 0,
+              quizQuestionsJson: JSON.stringify(quiz),
+              // Intentionally NOT setting: totalScore, completed, completedAt.
+              // Those are set when the quiz is submitted via submit_quiz.
             },
           });
 
-          controller.enqueue(encoder.encode(JSON.stringify(result)));
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({ ...grade, quizQuestions: sanitizeQuiz(quiz) })
+            )
+          );
           controller.close();
         } catch (err) {
           const message = (err as Error).message || "unknown error";
@@ -147,6 +233,69 @@ export async function POST(req: NextRequest) {
     return new Response(stream, {
       headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
     });
+  }
+
+  if (action === "submit_quiz") {
+    if (participant.completed) {
+      return new Response(JSON.stringify({ error: "Already submitted." }), { status: 409 });
+    }
+    if (!participant.quizQuestionsJson || participant.roleplayScore == null) {
+      return new Response(
+        JSON.stringify({ error: "Quiz not ready. Finish the roleplay first." }),
+        { status: 409 }
+      );
+    }
+    if (
+      !Array.isArray(answers) ||
+      answers.length !== 10 ||
+      !answers.every((a) => typeof a === "number" && a >= 0 && a <= 3)
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Submit exactly 10 answers, each 0-3." }),
+        { status: 400 }
+      );
+    }
+
+    let questions: QuizQuestion[];
+    try {
+      questions = JSON.parse(participant.quizQuestionsJson) as QuizQuestion[];
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Quiz data corrupted. Please refresh." }),
+        { status: 500 }
+      );
+    }
+    if (questions.length !== 10) {
+      return new Response(
+        JSON.stringify({ error: "Quiz data corrupted. Please refresh." }),
+        { status: 500 }
+      );
+    }
+
+    const roleplayScore = participant.roleplayScore ?? 0;
+    const { quizScore, correctAnswers } = gradeQuiz(questions, answers as number[]);
+    const totalScore = Math.round(((roleplayScore + quizScore) / 2) * 10) / 10;
+
+    await prisma.liveParticipant.update({
+      where: { id: participant.id },
+      data: {
+        quizAnswersJson: JSON.stringify(answers),
+        quizScore,
+        totalScore,
+        completed: true,
+        completedAt: new Date(),
+      },
+    });
+
+    return new Response(
+      JSON.stringify({
+        roleplayScore,
+        quizScore,
+        totalScore,
+        correctAnswers,
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   }
 
   return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400 });

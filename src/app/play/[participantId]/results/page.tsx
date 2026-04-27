@@ -54,6 +54,9 @@ type SessionResp = {
   eventCode: string;
   completed: boolean;
   score: Score | null;
+  roleplayScore: number | null;
+  quizScore: number | null;
+  combinedTotalScore: number | null;
 };
 
 type LeaderboardEntry = {
@@ -167,18 +170,52 @@ export default function ResultsPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* Total score */}
-        <Card className="border-primary/30 bg-gradient-to-br from-background to-primary/5">
-          <CardHeader className="text-center">
-            <CardTitle className="text-6xl font-bold tabular-nums">
-              {score.totalScore}
-              <span className="text-2xl text-muted-foreground">/100</span>
-            </CardTitle>
-            <CardDescription>Your roleplay score</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Progress value={score.totalScore} className="h-3" />
-          </CardContent>
-        </Card>
+        {session.combinedTotalScore != null && session.quizScore != null && session.roleplayScore != null ? (
+          <Card className="border-primary/30 bg-gradient-to-br from-background to-primary/5">
+            <CardHeader className="text-center">
+              <CardTitle className="text-6xl font-bold tabular-nums">
+                {session.combinedTotalScore}
+                <span className="text-2xl text-muted-foreground">/100</span>
+              </CardTitle>
+              <CardDescription>Your final combined score</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Progress value={session.combinedTotalScore} className="h-3" />
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Roleplay</p>
+                  <p className="text-2xl font-semibold mt-0.5">
+                    {session.roleplayScore}
+                    <span className="text-sm text-muted-foreground">/100</span>
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Quiz</p>
+                  <p className="text-2xl font-semibold mt-0.5">
+                    {session.quizScore}
+                    <span className="text-sm text-muted-foreground">/100</span>
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Final score is the average of your roleplay and quiz scores.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-primary/30 bg-gradient-to-br from-background to-primary/5">
+            <CardHeader className="text-center">
+              <CardTitle className="text-6xl font-bold tabular-nums">
+                {score.totalScore}
+                <span className="text-2xl text-muted-foreground">/100</span>
+              </CardTitle>
+              <CardDescription>Your roleplay score</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Progress value={score.totalScore} className="h-3" />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Leaderboard */}
         {board && (

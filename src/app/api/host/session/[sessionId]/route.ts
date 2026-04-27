@@ -42,6 +42,7 @@ export async function GET(_req: NextRequest, ctx: RouteParams) {
     status: session.status,
     createdAt: session.createdAt,
     closedAt: session.closedAt,
+    prepStartedAt: session.prepStartedAt,
     eventName: scenario.eventName ?? session.eventCode,
     scenario: scenario.scenario ?? "",
     performanceIndicators: scenario.performanceIndicators ?? [],
@@ -75,4 +76,46 @@ export async function DELETE(_req: NextRequest, ctx: RouteParams) {
   });
 
   return NextResponse.json({ ok: true });
+}
+
+export async function POST(req: NextRequest, ctx: RouteParams) {
+  if (!(await readHost())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { sessionId } = await ctx.params;
+
+  let body: { action?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (body.action !== "start_prep") {
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  }
+
+  const existing = await prisma.liveSession.findUnique({ where: { id: sessionId } });
+  if (!existing) {
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+  if (existing.status !== "open") {
+    return NextResponse.json(
+      { error: "Session is closed" },
+      { status: 409 }
+    );
+  }
+
+  if (existing.prepStartedAt) {
+    return NextResponse.json({ prepStartedAt: existing.prepStartedAt });
+  }
+
+  const updated = await prisma.liveSession.update({
+    where: { id: sessionId },
+    data: { prepStartedAt: new Date() },
+    select: { prepStartedAt: true },
+  });
+
+  return NextResponse.json({ prepStartedAt: updated.prepStartedAt });
 }
