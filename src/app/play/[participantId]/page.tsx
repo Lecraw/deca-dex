@@ -10,7 +10,6 @@ import {
   RoleplaySessionUI,
   type RoleplaySessionData,
   type RoleplayScore,
-  type QuizResult,
 } from "@/components/roleplay/RoleplaySessionUI";
 
 type LiveSessionResponse = RoleplaySessionData & { sessionStatus: string };
@@ -63,23 +62,6 @@ export default function PlaySessionPage() {
     return parsed as RoleplayScore;
   };
 
-  const onSubmitQuiz = async (answers: number[]): Promise<QuizResult> => {
-    const res = await fetch("/api/live-session/roleplay", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "submit_quiz",
-        participantId,
-        answers,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to submit quiz.");
-    }
-    return data as QuizResult;
-  };
-
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
@@ -124,7 +106,6 @@ export default function PlaySessionPage() {
         sessionData={data}
         isLoading={isLoading}
         onEndSession={onEndSession}
-        onSubmitQuiz={onSubmitQuiz}
         backHref="/"
         newHref={`/play/${participantId}/results`}
         newLabel="View Leaderboard"

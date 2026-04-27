@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
-import { Avatar } from "@/components/live/Avatar";
-import { PREP_DURATION_SECONDS } from "@/lib/live-session-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,11 +28,6 @@ export interface RoleplayMessage {
   timestamp: string;
 }
 
-export interface QuizQuestionView {
-  prompt: string;
-  options: [string, string, string, string];
-}
-
 export interface RoleplaySessionData {
   id: string;
   eventCode: string;
@@ -47,11 +40,6 @@ export interface RoleplaySessionData {
   messages: RoleplayMessage[];
   completed: boolean;
   score: RoleplayScore | null;
-  quizQuestions?: QuizQuestionView[] | null;
-  quizSubmitted?: boolean;
-  prepStartedAt?: string | null;
-  prepDurationSeconds?: number;
-  displayName?: string;
 }
 
 export interface RoleplayScore {
@@ -71,28 +59,19 @@ export interface RoleplayScore {
   }>;
   strengths?: string[];
   improvements?: string[];
-  quizQuestions?: QuizQuestionView[];
-}
-
-export interface QuizResult {
-  roleplayScore: number;
-  quizScore: number;
-  totalScore: number;
-  correctAnswers: number[];
 }
 
 interface Props {
   sessionData: RoleplaySessionData | undefined;
   isLoading: boolean;
   onEndSession: (fullTranscript: string) => Promise<RoleplayScore>;
-  onSubmitQuiz?: (answers: number[]) => Promise<QuizResult>;
   backHref: string;
   newHref: string;
   newLabel?: string;
   headerSubtitle?: string;
 }
 
-type Phase = "lobby" | "prep" | "presenting" | "followup" | "quiz" | "results";
+type Phase = "prep" | "presenting" | "followup" | "results";
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -128,32 +107,21 @@ export function RoleplaySessionUI({
   sessionData,
   isLoading,
   onEndSession,
-  onSubmitQuiz,
   backHref,
   newHref,
   newLabel = "New Roleplay",
   headerSubtitle,
 }: Props) {
-  // Live-session pages pass `prepStartedAt` (string | null). Standalone roleplay
-  // pages omit it, in which case we fall back to today's behavior (start in prep).
-  const lobbyEnabled =
-    sessionData?.prepStartedAt !== undefined && !sessionData.completed;
-  const initialPhase: Phase =
-    lobbyEnabled && !sessionData?.prepStartedAt ? "lobby" : "prep";
-  const [phase, setPhase] = useState<Phase>(initialPhase);
+  const [phase, setPhase] = useState<Phase>("prep");
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
-  const [prepTimeLeft, setPrepTimeLeft] = useState(PREP_DURATION_SECONDS);
+  const [prepTimeLeft, setPrepTimeLeft] = useState(600);
   const [presentTimeLeft, setPresentTimeLeft] = useState(600);
   const [followUpIndex, setFollowUpIndex] = useState(0);
-  const [roleplayConcluded, setRoleplayConcluded] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionView[]>([]);
-  const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>([]);
-  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -169,38 +137,21 @@ export function RoleplaySessionUI({
   }, [messages, interimTranscript]);
 
   useEffect(() => {
-    if (phase !== "prep") return;
-
-    const duration = sessionData?.prepDurationSeconds ?? PREP_DURATION_SECONDS;
-    const startedAt = sessionData?.prepStartedAt
-      ? new Date(sessionData.prepStartedAt).getTime()
-      : null;
-
-    const compute = () => {
-      if (!startedAt) {
-        setPrepTimeLeft((prev) => Math.max(0, prev - 1));
-        return;
-      }
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setPrepTimeLeft(Math.max(0, duration - elapsed));
-    };
-
-    if (startedAt) {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setPrepTimeLeft(Math.max(0, duration - elapsed));
+    if (phase === "prep") {
+      prepTimerRef.current = setInterval(() => {
+        setPrepTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (prepTimerRef.current) clearInterval(prepTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
-
-    prepTimerRef.current = setInterval(compute, 1000);
     return () => {
       if (prepTimerRef.current) clearInterval(prepTimerRef.current);
     };
-  }, [phase, sessionData?.prepStartedAt, sessionData?.prepDurationSeconds]);
-
-  useEffect(() => {
-    if (phase === "lobby" && sessionData?.prepStartedAt) {
-      setPhase("prep");
-    }
-  }, [phase, sessionData?.prepStartedAt]);
+  }, [phase]);
 
   useEffect(() => {
     if (phase === "presenting" || phase === "followup") {
@@ -218,21 +169,6 @@ export function RoleplaySessionUI({
       if (presentTimerRef.current) clearInterval(presentTimerRef.current);
     };
   }, [phase]);
-
-  // If the server has a cached quiz (user refreshed mid-quiz), hydrate state.
-  useEffect(() => {
-    if (
-      sessionData?.quizQuestions &&
-      sessionData.quizQuestions.length > 0 &&
-      !sessionData.quizSubmitted &&
-      phase !== "quiz" &&
-      phase !== "results"
-    ) {
-      setQuizQuestions(sessionData.quizQuestions);
-      setQuizAnswers(new Array(sessionData.quizQuestions.length).fill(null));
-      setPhase("quiz");
-    }
-  }, [sessionData?.quizQuestions, sessionData?.quizSubmitted, phase]);
 
   const startListening = useCallback(async () => {
     const SpeechRecognition = getSpeechRecognition();
@@ -342,19 +278,7 @@ export function RoleplaySessionUI({
 
   const endSession = useMutation({
     mutationFn: (fullTranscript: string) => onEndSession(fullTranscript),
-  });
-
-  const submitQuiz = useMutation({
-    mutationFn: async (answers: number[]) => {
-      if (!onSubmitQuiz) {
-        throw new Error("Quiz submission is not available for this session.");
-      }
-      return onSubmitQuiz(answers);
-    },
-    onSuccess: (result) => {
-      setQuizResult(result);
-      setPhase("results");
-    },
+    onSuccess: () => setPhase("results"),
   });
 
   const handleStartPresenting = () => {
@@ -389,8 +313,6 @@ export function RoleplaySessionUI({
           setMessages((prev) => [...prev, judgeMsg]);
           setFollowUpIndex(1);
         }, 1000);
-      } else {
-        setRoleplayConcluded(true);
       }
     } else if (phase === "followup") {
       if (sessionData?.judgeFollowUpQuestions && followUpIndex < sessionData.judgeFollowUpQuestions.length) {
@@ -411,7 +333,6 @@ export function RoleplaySessionUI({
             timestamp: new Date().toISOString(),
           };
           setMessages((prev) => [...prev, judgeMsg]);
-          setRoleplayConcluded(true);
         }, 1000);
       }
     }
@@ -433,17 +354,7 @@ export function RoleplaySessionUI({
     setInterimTranscript("");
 
     const fullTranscript = allMsgs.map((m) => `${m.role}: ${m.content}`).join("\n\n");
-    endSession.mutate(fullTranscript, {
-      onSuccess: (score) => {
-        if (onSubmitQuiz && score.quizQuestions && score.quizQuestions.length > 0) {
-          setQuizQuestions(score.quizQuestions);
-          setQuizAnswers(new Array(score.quizQuestions.length).fill(null));
-          setPhase("quiz");
-        } else {
-          setPhase("results");
-        }
-      },
-    });
+    endSession.mutate(fullTranscript);
   };
 
   const formatTime = (seconds: number) => {
@@ -521,29 +432,6 @@ export function RoleplaySessionUI({
           </div>
         )}
       </div>
-
-      {/* LOBBY */}
-      {phase === "lobby" && (
-        <div className="max-w-md mx-auto text-center py-16 space-y-6">
-          {sessionData.displayName && (
-            <Avatar
-              seed={sessionData.id}
-              displayName={sessionData.displayName}
-              size="lg"
-              className="mx-auto"
-            />
-          )}
-          <div className="space-y-1">
-            <p className="text-base font-semibold">
-              You&apos;re in{sessionData.displayName ? `, ${sessionData.displayName}` : ""}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Waiting for the host to start the session…
-            </p>
-          </div>
-          <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
-        </div>
-      )}
 
       {/* PREP */}
       {phase === "prep" && (
@@ -738,16 +626,10 @@ export function RoleplaySessionUI({
               variant={transcript.trim() ? "outline" : "default"}
               className="flex-1"
               onClick={handleFinishRoleplay}
-              disabled={
-                endSession.isPending ||
-                (!transcript.trim() && messages.length === 0) ||
-                (phase === "followup" && !roleplayConcluded)
-              }
+              disabled={endSession.isPending || (!transcript.trim() && messages.length === 0)}
             >
               {endSession.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scoring...</>
-              ) : phase === "followup" && !roleplayConcluded ? (
-                <><CheckCircle2 className="h-4 w-4 mr-2" /> Answer Judge&apos;s Questions First</>
               ) : (
                 <><CheckCircle2 className="h-4 w-4 mr-2" /> End &amp; Get Score</>
               )}
@@ -763,158 +645,23 @@ export function RoleplaySessionUI({
         </div>
       )}
 
-      {/* QUIZ */}
-      {phase === "quiz" && (
+      {/* RESULTS */}
+      {phase === "results" && score && (
         <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" /> Knowledge Check
+            <CardHeader className="text-center">
+              <CardTitle className="text-5xl font-bold">
+                {score.totalScore}
+                <span className="text-2xl text-muted-foreground">/100</span>
               </CardTitle>
-              <CardDescription>
-                Answer all 10 questions. Your quiz score averages with your roleplay
-                score to determine your final ranking.
-              </CardDescription>
+              <CardDescription>Roleplay Performance Score</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>
-                  {quizAnswers.filter((a) => a !== null).length} of {quizQuestions.length} answered
-                </span>
-                <Progress
-                  value={
-                    quizQuestions.length === 0
-                      ? 0
-                      : (quizAnswers.filter((a) => a !== null).length / quizQuestions.length) * 100
-                  }
-                  className="h-2 flex-1"
-                />
-              </div>
+              <Progress value={score.totalScore} className="h-3" />
             </CardContent>
           </Card>
 
-          {quizQuestions.map((q, qi) => (
-            <Card key={qi}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">
-                  <span className="text-muted-foreground mr-2">{qi + 1}.</span>
-                  {q.prompt}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-2">
-                  {q.options.map((opt, oi) => {
-                    const selected = quizAnswers[qi] === oi;
-                    return (
-                      <button
-                        key={oi}
-                        type="button"
-                        onClick={() =>
-                          setQuizAnswers((prev) => {
-                            const next = [...prev];
-                            next[qi] = oi;
-                            return next;
-                          })
-                        }
-                        className={`text-left rounded-lg border px-3 py-2.5 text-sm transition-colors ${
-                          selected
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border bg-muted/30 text-foreground/80 hover:bg-muted/60"
-                        }`}
-                      >
-                        <span className="inline-block w-5 font-mono text-xs text-muted-foreground">
-                          {String.fromCharCode(65 + oi)}.
-                        </span>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {submitQuiz.isError && (
-            <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>
-                {submitQuiz.error instanceof Error
-                  ? submitQuiz.error.message
-                  : "Failed to submit quiz. Please try again."}
-              </span>
-            </div>
-          )}
-
-          <Button
-            size="lg"
-            className="w-full"
-            disabled={
-              submitQuiz.isPending ||
-              quizAnswers.some((a) => a === null) ||
-              quizQuestions.length === 0
-            }
-            onClick={() => submitQuiz.mutate(quizAnswers.filter((a): a is number => a !== null))}
-          >
-            {submitQuiz.isPending ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting…</>
-            ) : (
-              <><CheckCircle2 className="h-4 w-4 mr-2" /> Submit Quiz &amp; Get Final Score</>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {/* RESULTS */}
-      {phase === "results" && (score || quizResult) && (
-        <div className="space-y-4">
-          {quizResult ? (
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle className="text-5xl font-bold">
-                  {quizResult.totalScore}
-                  <span className="text-2xl text-muted-foreground">/100</span>
-                </CardTitle>
-                <CardDescription>Final Combined Score</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Progress value={quizResult.totalScore} className="h-3" />
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-lg border border-border p-3">
-                    <p className="text-xs text-muted-foreground">Roleplay</p>
-                    <p className="text-2xl font-semibold mt-0.5">
-                      {quizResult.roleplayScore}
-                      <span className="text-sm text-muted-foreground">/100</span>
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-border p-3">
-                    <p className="text-xs text-muted-foreground">Quiz</p>
-                    <p className="text-2xl font-semibold mt-0.5">
-                      {quizResult.quizScore}
-                      <span className="text-sm text-muted-foreground">/100</span>
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  Final score is the average of your roleplay and quiz scores.
-                </p>
-              </CardContent>
-            </Card>
-          ) : score ? (
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle className="text-5xl font-bold">
-                  {score.totalScore}
-                  <span className="text-2xl text-muted-foreground">/100</span>
-                </CardTitle>
-                <CardDescription>Roleplay Performance Score</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Progress value={score.totalScore} className="h-3" />
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {score?.overallFeedback && (
+          {score.overallFeedback && (
             <Card>
               <CardContent className="p-4">
                 <p className="text-sm">{score.overallFeedback}</p>
@@ -922,7 +669,7 @@ export function RoleplaySessionUI({
             </Card>
           )}
 
-          {score?.piScores && score.piScores.length > 0 && (
+          {score.piScores && score.piScores.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -954,7 +701,7 @@ export function RoleplaySessionUI({
             </Card>
           )}
 
-          {score?.twentyFirstCenturyScores && score.twentyFirstCenturyScores.length > 0 && (
+          {score.twentyFirstCenturyScores && score.twentyFirstCenturyScores.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -975,112 +722,42 @@ export function RoleplaySessionUI({
             </Card>
           )}
 
-          {score && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-500" /> Strengths
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {(score?.strengths || []).map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-green-500 shrink-0" />
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-500" /> Areas to Improve
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {(score?.improvements || []).map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-yellow-500 shrink-0" />
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {quizResult && quizQuestions.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" /> Quiz Review
+                  <TrendingUp className="h-4 w-4 text-green-500" /> Strengths
                 </CardTitle>
-                <CardDescription>
-                  You got {quizResult.correctAnswers.filter((c, i) => quizAnswers[i] === c).length} of{" "}
-                  {quizQuestions.length} correct.
-                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {quizQuestions.map((q, qi) => {
-                  const correct = quizResult.correctAnswers[qi];
-                  const chosen = quizAnswers[qi];
-                  const isRight = chosen === correct;
-                  return (
-                    <div key={qi} className="space-y-2">
-                      <div className="flex items-start gap-2">
-                        {isRight ? (
-                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
-                        )}
-                        <p className="text-sm font-medium">
-                          <span className="text-muted-foreground mr-1">{qi + 1}.</span>
-                          {q.prompt}
-                        </p>
-                      </div>
-                      <div className="space-y-1 ml-6">
-                        {q.options.map((opt, oi) => {
-                          const isCorrect = oi === correct;
-                          const isChosen = oi === chosen;
-                          const cls = isCorrect
-                            ? "border-green-500/60 bg-green-500/10"
-                            : isChosen
-                            ? "border-red-500/60 bg-red-500/10"
-                            : "border-border bg-muted/20";
-                          return (
-                            <div
-                              key={oi}
-                              className={`flex items-center gap-2 rounded border px-2.5 py-1.5 text-xs ${cls}`}
-                            >
-                              <span className="font-mono text-muted-foreground w-4">
-                                {String.fromCharCode(65 + oi)}.
-                              </span>
-                              <span className="flex-1">{opt}</span>
-                              {isCorrect && (
-                                <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">
-                                  Correct
-                                </span>
-                              )}
-                              {isChosen && !isCorrect && (
-                                <span className="text-[10px] font-semibold text-red-600 dark:text-red-400">
-                                  Your answer
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+              <CardContent>
+                <ul className="space-y-2">
+                  {(score.strengths || []).map((s, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <TrendingUp className="h-3.5 w-3.5 mt-0.5 text-green-500 shrink-0" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
-          )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-500" /> Areas to Improve
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {(score.improvements || []).map((s, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-yellow-500 shrink-0" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" asChild>

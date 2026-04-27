@@ -4,14 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { awardXp } from "@/lib/gamification/xp";
 import { checkAndAwardBadges } from "@/lib/gamification/badges";
-import {
-  generateScenario,
-  gradeRoleplay,
-  generateQuiz,
-  gradeQuiz,
-  sanitizeQuiz,
-  type QuizQuestion,
-} from "@/lib/ai/live-roleplay";
+import { generateScenario, gradeRoleplay } from "@/lib/ai/live-roleplay";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -38,11 +31,6 @@ export async function GET(req: NextRequest) {
   const messages = JSON.parse(roleplaySession.messagesJson);
   const score = roleplaySession.scoreJson ? JSON.parse(roleplaySession.scoreJson) : null;
 
-  const quizQuestions = score?.quizQuestionsCache
-    ? sanitizeQuiz(score.quizQuestionsCache as QuizQuestion[])
-    : null;
-  const quizSubmitted = !!score?.quizResult;
-
   return new Response(
     JSON.stringify({
       id: roleplaySession.id,
@@ -56,8 +44,6 @@ export async function GET(req: NextRequest) {
       messages,
       completed: roleplaySession.completed,
       score,
-      quizQuestions,
-      quizSubmitted,
     }),
     { headers: { "Content-Type": "application/json" } }
   );
@@ -145,7 +131,6 @@ export async function POST(req: NextRequest) {
 
     const scenarioData = JSON.parse(roleplaySession.scenarioJson);
     const userId = session.user.id;
-    const event = await prisma.decaEvent.findUnique({ where: { code: roleplaySession.eventCode } });
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -169,27 +154,13 @@ export async function POST(req: NextRequest) {
             return;
           }
 
-          let quiz: QuizQuestion[] | null = null;
-          if (event) {
-            try {
-              quiz = await generateQuiz(event);
-            } catch (err) {
-              console.error("Quiz generation failed:", err);
-              quiz = null;
-            }
-          }
-
-          const stored = quiz
-            ? { ...result, quizQuestionsCache: quiz }
-            : result;
-
           await prisma.roleplaySession.update({
             where: { id: sessionId },
             data: {
               messagesJson: JSON.stringify(
                 fullTranscript ? [{ role: "user", content: fullTranscript, timestamp: new Date().toISOString() }] : []
               ),
-              scoreJson: JSON.stringify(stored),
+              scoreJson: JSON.stringify(result),
               completed: true,
             },
           });
@@ -197,11 +168,7 @@ export async function POST(req: NextRequest) {
           await awardXp(userId, "COMPLETE_ROLEPLAY", { eventCode: roleplaySession.eventCode });
           await checkAndAwardBadges(userId);
 
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({ ...result, quizQuestions: quiz ? sanitizeQuiz(quiz) : [] })
-            )
-          );
+          controller.enqueue(encoder.encode(JSON.stringify(result)));
           controller.close();
         } catch (err) {
           const message = (err as Error).message || "unknown error";
@@ -214,51 +181,6 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: { "Content-Type": "text/plain", "Cache-Control": "no-cache", "X-Accel-Buffering": "no" },
-    });
-  }
-
-  // =============================================
-  // SUBMIT QUIZ — grade the cached quiz
-  // =============================================
-  if (action === "submit_quiz") {
-    const { sessionId, answers } = body;
-    if (!sessionId || !Array.isArray(answers)) {
-      return new Response(JSON.stringify({ error: "sessionId and answers[] required" }), { status: 400 });
-    }
-
-    const roleplaySession = await prisma.roleplaySession.findUnique({ where: { id: sessionId } });
-    if (!roleplaySession || roleplaySession.userId !== session.user.id) {
-      return new Response(JSON.stringify({ error: "Session not found" }), { status: 404 });
-    }
-    if (!roleplaySession.scoreJson) {
-      return new Response(JSON.stringify({ error: "Finish the roleplay first." }), { status: 400 });
-    }
-
-    const stored = JSON.parse(roleplaySession.scoreJson);
-    const cached = stored?.quizQuestionsCache as QuizQuestion[] | undefined;
-    if (!cached || !Array.isArray(cached) || cached.length === 0) {
-      return new Response(JSON.stringify({ error: "No quiz available for this session." }), { status: 400 });
-    }
-
-    const { quizScore, correctAnswers } = gradeQuiz(cached, answers as number[]);
-    const roleplayScore = typeof stored.totalScore === "number" ? stored.totalScore : 0;
-    const totalScore = Math.round(((roleplayScore + quizScore) / 2) * 10) / 10;
-
-    const quizResult = {
-      roleplayScore,
-      quizScore,
-      totalScore,
-      correctAnswers,
-      userAnswers: answers,
-    };
-
-    await prisma.roleplaySession.update({
-      where: { id: sessionId },
-      data: { scoreJson: JSON.stringify({ ...stored, quizResult }) },
-    });
-
-    return new Response(JSON.stringify(quizResult), {
-      headers: { "Content-Type": "application/json" },
     });
   }
 

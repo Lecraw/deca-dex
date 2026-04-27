@@ -6,7 +6,6 @@ import {
   RoleplaySessionUI,
   type RoleplaySessionData,
   type RoleplayScore,
-  type QuizResult,
 } from "@/components/roleplay/RoleplaySessionUI";
 
 export default function RoleplaySessionPage() {
@@ -41,29 +40,11 @@ export default function RoleplaySessionPage() {
     return parsed as RoleplayScore;
   };
 
-  const onSubmitQuiz = async (answers: number[]): Promise<QuizResult> => {
-    const res = await fetch("/api/ai/roleplay", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "submit_quiz",
-        sessionId,
-        answers,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      throw new Error(data.error || "Failed to submit quiz.");
-    }
-    return data as QuizResult;
-  };
-
   return (
     <RoleplaySessionUI
       sessionData={data}
       isLoading={isLoading}
       onEndSession={onEndSession}
-      onSubmitQuiz={onSubmitQuiz}
       backHref="/roleplay"
       newHref="/roleplay"
     />
