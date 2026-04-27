@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateCode, readHost } from "@/lib/live-session";
-import { generateScenario } from "@/lib/ai/live-roleplay";
 
 export async function GET() {
   if (!(await readHost())) {
@@ -87,42 +86,6 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-
-  const sessionId = created.id;
-  after(async () => {
-    // No client to stream into for the keep-alive trick — provide a noop sink.
-    const sink = {
-      controller: {
-        enqueue: () => {},
-        close: () => {},
-        error: () => {},
-      } as unknown as ReadableStreamDefaultController<Uint8Array>,
-      encoder: new TextEncoder(),
-    };
-    try {
-      const scenarioData = await generateScenario(event, sink);
-      if (!scenarioData) {
-        await prisma.liveSession.update({
-          where: { id: sessionId },
-          data: { status: "scenario_failed" },
-        });
-        return;
-      }
-      await prisma.liveSession.update({
-        where: { id: sessionId },
-        data: {
-          scenarioJson: JSON.stringify(scenarioData),
-          status: "open",
-        },
-      });
-    } catch (err) {
-      console.error("Background scenario generation failed:", err);
-      await prisma.liveSession.update({
-        where: { id: sessionId },
-        data: { status: "scenario_failed" },
-      }).catch(() => {});
-    }
-  });
 
   return NextResponse.json({ sessionId: created.id, code: created.code });
 }
