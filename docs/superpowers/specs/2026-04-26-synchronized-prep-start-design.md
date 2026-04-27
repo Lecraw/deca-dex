@@ -1,28 +1,55 @@
-# Synchronized Prep Start for Live Sessions
+# Synchronized Prep Start + Basic Avatars for Live Sessions
 
 **Date:** 2026-04-26
 **Status:** Approved (design)
 
 ## Problem
 
-Today, each live-session participant's 10-minute prep timer starts the moment they land on `/play/[participantId]`. Players who join earlier are further into prep than players who join later — there is no shared start. The host has no way to start prep simultaneously for the room.
+1. **Unsynchronized prep.** Each live-session participant's 10-minute prep timer starts the moment they land on `/play/[participantId]`. Players who join earlier are further into prep than players who join later — there is no shared start. The host has no way to start prep simultaneously for the room.
+2. **No visual identity.** Participants in the lobby and on the leaderboard show only as a display name. A minimal avatar makes the lobby feel more alive and helps players spot themselves at a glance.
 
 ## Goal
 
-Give the host a single "Start Prep for Everyone" button that synchronizes the start of the prep phase across all currently-joined participants. After prep starts, the existing per-player flow (player clicks "I'm Ready — Start Presentation" when ready) is unchanged.
+1. Give the host a single "Start Prep for Everyone" button that synchronizes the start of the prep phase across all currently-joined participants. After prep starts, the existing per-player flow (player clicks "I'm Ready — Start Presentation" when ready) is unchanged.
+2. Give every participant a deterministic, auto-generated avatar — no user choice, no uploads. Render it in the host's participant list and on the participant's own UI.
 
-This is Option A from brainstorming: one host button (start prep). No host control over the prep→presenting transition; each player still triggers their own presentation.
+This is Option A from brainstorming for prep sync: one host button (start prep). No host control over the prep→presenting transition; each player still triggers their own presentation.
+
+## Existing quiz flow (no changes)
+
+For completeness — this is already built and is **not** changing in this spec:
+
+- After a participant ends the roleplay, the server (`POST /api/live-session/roleplay` with `action: "end_session"`) generates a 10-question multiple-choice quiz keyed to the event.
+- The participant answers all 10 in `RoleplaySessionUI`'s quiz phase, then submits via `action: "submit_quiz"`.
+- Each question is worth 10 points → `quizScore` is /100. `roleplayScore` is /100. Final `totalScore = round((roleplayScore + quizScore) / 2 * 10) / 10`.
+- Stored on `LiveParticipant`: `quizQuestionsJson`, `quizAnswersJson`, `quizScore`, `totalScore`.
+
+This spec touches none of that.
 
 ## Non-goals
 
 - Host control of the prep→presenting transition (deferred — players still self-trigger).
 - Real-time push (WebSockets / SSE). Polling at the existing cadence is sufficient.
 - Changes to the standalone (non-live) `/roleplay` flow.
-- Changes to scoring, quiz, or results flows.
+- Changes to scoring or quiz flows.
+- User-selected avatars, emoji pickers, or image uploads.
 
 ## Architecture
 
-### Source of truth
+### Avatars
+
+Pure-derivation, no schema, no storage:
+
+- A small client-side helper `getAvatar(seed: string): { initial: string; bg: string }` takes a stable seed (use `LiveParticipant.id`, falling back to `displayName`) and returns:
+  - `initial`: first uppercase letter of `displayName`.
+  - `bg`: one of ~10 hardcoded Tailwind gradient classes, picked by `hash(seed) % palette.length`.
+- Rendered as a `<div>` with `rounded-full`, the gradient bg, and the initial centered.
+- Lives at `src/components/live/Avatar.tsx`. Used in:
+  - Host participant table and leaderboard rows (`_view.tsx`).
+  - Participant lobby screen ("You're in: [avatar] [displayName]").
+- No API or schema changes. The seed is already in the existing GET responses.
+
+### Source of truth (prep sync)
 
 `LiveSession.prepStartedAt: DateTime?`
 
@@ -108,7 +135,7 @@ No `POST` changes.
   - If `prepStartedAt` prop is provided and is `null` → start in `"lobby"`.
   - If `prepStartedAt` is non-null → start in `"prep"` with `prepTimeLeft = max(0, duration - elapsed)`.
   - If prop is `undefined` (standalone flow) → start in `"prep"` with full duration (today's behavior).
-- Lobby UI: simple centered card with spinner + "Waiting for host to start the session…".
+- Lobby UI: centered card with the participant's `<Avatar />` + display name + spinner + "Waiting for host to start the session…".
 - When phase is `"lobby"` and incoming `prepStartedAt` becomes non-null, transition to `"prep"` and seed `prepTimeLeft` from the server timestamp.
 - Once in `"prep"`, the existing 1s interval continues to drive the countdown; on each tick, recompute from `prepStartedAt` rather than decrementing local state, so clock skew can't accumulate.
 
@@ -123,12 +150,14 @@ No `POST` changes.
 ## Testing plan
 
 Manual:
-1. Host creates a session. Two browsers join. Both see lobby.
-2. Host clicks Start Prep. Within ~2s, both browsers flip to prep with the same number on the clock (±2s).
-3. A third browser joins after Start Prep — lands in prep with reduced time.
-4. Refresh a participant mid-prep — clock resumes at the correct remaining time.
-5. Host clicks Start Prep twice — no error, badge shows original timestamp.
-6. Close session before Start Prep — button hidden / disabled.
+1. Host creates a session. Two browsers join. Both see lobby with their avatars.
+2. Host's participant table and leaderboard show the same avatars (consistent across views).
+3. Host clicks Start Prep. Within ~2s, both browsers flip to prep with the same number on the clock (±2s).
+4. A third browser joins after Start Prep — lands in prep with reduced time.
+5. Refresh a participant mid-prep — clock resumes at the correct remaining time, avatar identical.
+6. Host clicks Start Prep twice — no error, badge shows original timestamp.
+7. Close session before Start Prep — button hidden / disabled.
+8. Two players with the same first letter get distinguishable avatars (different gradients).
 
 ## Open trade-offs (acknowledged, accepted)
 
