@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateCode, readHost } from "@/lib/live-session";
 import { generateScenario } from "@/lib/ai/live-roleplay";
@@ -57,74 +57,72 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        const scenarioData = await generateScenario(event, { controller, encoder });
-        if (!scenarioData) {
-          controller.enqueue(
-            encoder.encode(
-              JSON.stringify({ error: "Failed to generate scenario. Please try again." })
-            )
-          );
-          controller.close();
-          return;
-        }
+  // Insert the row immediately with an empty scenario placeholder so the host
+  // gets a join code right away. Scenario generation runs in the background.
+  let created: { id: string; code: string } | null = null;
+  let lastErr: unknown = null;
+  for (let i = 0; i < 5; i++) {
+    const code = generateCode();
+    try {
+      const s = await prisma.liveSession.create({
+        data: {
+          code,
+          eventCode,
+          scenarioJson: "{}",
+          status: "generating",
+        },
+        select: { id: true, code: true },
+      });
+      created = s;
+      break;
+    } catch (err) {
+      lastErr = err;
+    }
+  }
 
-        // Create the session with a unique code, retry on collision
-        let created: { id: string; code: string } | null = null;
-        let lastErr: unknown = null;
-        for (let i = 0; i < 5; i++) {
-          const code = generateCode();
-          try {
-            const s = await prisma.liveSession.create({
-              data: {
-                code,
-                eventCode,
-                scenarioJson: JSON.stringify(scenarioData),
-                status: "open",
-              },
-              select: { id: true, code: true },
-            });
-            created = s;
-            break;
-          } catch (err) {
-            lastErr = err;
-          }
-        }
+  if (!created) {
+    console.error("Failed to create session after 5 retries", lastErr);
+    return NextResponse.json(
+      { error: "Could not generate a unique join code. Please try again." },
+      { status: 500 }
+    );
+  }
 
-        if (!created) {
-          console.error("Failed to create session after 5 retries", lastErr);
-          controller.enqueue(
-            encoder.encode(JSON.stringify({ error: "Could not generate a unique join code. Please try again." }))
-          );
-          controller.close();
-          return;
-        }
-
-        controller.enqueue(
-          encoder.encode(JSON.stringify({ sessionId: created.id, code: created.code }))
-        );
-        controller.close();
-      } catch (err) {
-        const message = (err as Error).message || "unknown error";
-        console.error("Host create-session error:", message, err);
-        controller.enqueue(
-          encoder.encode(
-            JSON.stringify({ error: `Failed to create session: ${message}` })
-          )
-        );
-        controller.close();
+  const sessionId = created.id;
+  after(async () => {
+    // No client to stream into for the keep-alive trick — provide a noop sink.
+    const sink = {
+      controller: {
+        enqueue: () => {},
+        close: () => {},
+        error: () => {},
+      } as unknown as ReadableStreamDefaultController<Uint8Array>,
+      encoder: new TextEncoder(),
+    };
+    try {
+      const scenarioData = await generateScenario(event, sink);
+      if (!scenarioData) {
+        await prisma.liveSession.update({
+          where: { id: sessionId },
+          data: { status: "scenario_failed" },
+        });
+        return;
       }
-    },
+      await prisma.liveSession.update({
+        where: { id: sessionId },
+        data: {
+          scenarioJson: JSON.stringify(scenarioData),
+          status: "open",
+        },
+      });
+    } catch (err) {
+      console.error("Background scenario generation failed:", err);
+      await prisma.liveSession.update({
+        where: { id: sessionId },
+        data: { status: "scenario_failed" },
+      }).catch(() => {});
+    }
   });
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/plain",
-      "Cache-Control": "no-cache",
-      "X-Accel-Buffering": "no",
-    },
-  });
+  return NextResponse.json({ sessionId: created.id, code: created.code });
 }
