@@ -255,8 +255,10 @@ ${scoringInstructions}`,
   return tryParseJson<RoleplayGrade>(fullText);
 }
 
+export const QUIZ_QUESTION_COUNT = 2;
+
 /**
- * Generate 10 multiple-choice knowledge questions for a DECA event's cluster.
+ * Generate multiple-choice knowledge questions for a DECA event's cluster.
  * Used after a roleplay to test content knowledge. Returns null on parse failure.
  *
  * Not streamed — this runs serially after gradeRoleplay so the keep-alive from
@@ -272,12 +274,12 @@ export async function generateQuiz(event: {
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 2500,
+    max_tokens: 1500,
     system: `You are a DECA cluster exam writer for the ${event.cluster.replace(/_/g, " ")} career cluster.
 
 Event context: ${event.name} (${event.code}). ${event.description.substring(0, 400)}
 
-Generate exactly 10 multiple-choice questions that mimic the difficulty and style of real DECA cluster exam questions. Cover a mix of:
+Generate exactly ${QUIZ_QUESTION_COUNT} multiple-choice questions that mimic the difficulty and style of real DECA cluster exam questions. Cover a mix of:
 - Core concepts from the ${event.cluster.replace(/_/g, " ")} cluster
 - Applied business knowledge relevant to ${event.name}
 - Terminology, calculations, and scenario-based reasoning
@@ -285,7 +287,7 @@ Generate exactly 10 multiple-choice questions that mimic the difficulty and styl
 Rules:
 - Each question has exactly 4 options, one clearly correct.
 - Distractors must be plausible — not obvious wrong answers.
-- Vary difficulty: 3 easy, 5 medium, 2 hard.
+- Mix difficulty across the ${QUIZ_QUESTION_COUNT} questions.
 - Do not reference DECA, the student, or "the exam" in question text.
 
 Return ONLY a JSON object (no markdown, no code blocks, no prose) in this exact shape:
@@ -296,7 +298,7 @@ correctIndex is 0, 1, 2, or 3 (zero-based).`,
     messages: [
       {
         role: "user",
-        content: `Generate 10 multiple-choice questions for the ${event.cluster.replace(/_/g, " ")} cluster, calibrated to the ${event.name} event.`,
+        content: `Generate ${QUIZ_QUESTION_COUNT} multiple-choice questions for the ${event.cluster.replace(/_/g, " ")} cluster, calibrated to the ${event.name} event.`,
       },
     ],
   });
@@ -318,8 +320,8 @@ correctIndex is 0, 1, 2, or 3 (zero-based).`,
       q.correctIndex <= 3
   );
 
-  if (valid.length < 10) return null;
-  return valid.slice(0, 10);
+  if (valid.length < QUIZ_QUESTION_COUNT) return null;
+  return valid.slice(0, QUIZ_QUESTION_COUNT);
 }
 
 /**
