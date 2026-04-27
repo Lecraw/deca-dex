@@ -772,7 +772,7 @@ export function RoleplaySessionUI({
                 <Sparkles className="h-4 w-4 text-primary" /> Knowledge Check
               </CardTitle>
               <CardDescription>
-                Answer all {quizQuestions.length} question{quizQuestions.length === 1 ? "" : "s"}. Your quiz score averages with your roleplay
+                Answer all 10 questions. Your quiz score averages with your roleplay
                 score to determine your final ranking.
               </CardDescription>
             </CardHeader>
