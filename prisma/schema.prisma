@@ -372,8 +372,9 @@ model LiveSession {
   eventCode    String
   scenarioJson String
   status       String    @default("open")
-  createdAt    DateTime  @default(now())
-  closedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  closedAt      DateTime?
+  prepStartedAt DateTime?
 
   participants LiveParticipant[]
 
