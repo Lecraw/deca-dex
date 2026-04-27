@@ -727,7 +727,7 @@ export function RoleplaySessionUI({
                 <Sparkles className="h-4 w-4 text-primary" /> Knowledge Check
               </CardTitle>
               <CardDescription>
-                Answer all {quizQuestions.length} questions. Your quiz score averages with your roleplay score.
+                Answer all {quizQuestions.length} questions. Final score = roleplay (66.7%) + quiz (33.3%).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -830,11 +830,11 @@ export function RoleplaySessionUI({
                 <div className="grid grid-cols-2 gap-3 text-center text-sm">
                   <div className="rounded-lg border p-3">
                     <p className="text-2xl font-semibold">{quizResult.roleplayScore}</p>
-                    <p className="text-xs text-muted-foreground">Roleplay</p>
+                    <p className="text-xs text-muted-foreground">Roleplay (66.7%)</p>
                   </div>
                   <div className="rounded-lg border p-3">
                     <p className="text-2xl font-semibold">{quizResult.quizScore}</p>
-                    <p className="text-xs text-muted-foreground">Quiz</p>
+                    <p className="text-xs text-muted-foreground">Quiz (33.3%)</p>
                   </div>
                 </div>
               </CardContent>

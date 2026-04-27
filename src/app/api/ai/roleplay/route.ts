@@ -242,7 +242,8 @@ export async function POST(req: NextRequest) {
 
     const { quizScore, correctAnswers } = gradeQuiz(cached, answers as number[]);
     const roleplayScore = typeof stored.totalScore === "number" ? stored.totalScore : 0;
-    const totalScore = Math.round(((roleplayScore + quizScore) / 2) * 10) / 10;
+    // Roleplay weighted 2/3, quiz weighted 1/3.
+    const totalScore = Math.round(((roleplayScore * 2 + quizScore) / 3) * 10) / 10;
 
     const quizResult = {
       roleplayScore,
