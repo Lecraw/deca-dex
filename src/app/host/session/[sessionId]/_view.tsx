@@ -127,8 +127,6 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
   }
 
   const open = data.status === "open";
-  const generating = data.status === "generating";
-  const scenarioFailed = data.status === "scenario_failed";
   const ranked = [...data.participants]
     .filter((p) => p.completed)
     .sort((a, b) => (b.totalScore ?? 0) - (a.totalScore ?? 0));
@@ -153,11 +151,6 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
                 <Download className="h-3.5 w-3.5 mr-1.5" /> CSV
               </a>
             </Button>
-            {generating && (
-              <Badge variant="outline" className="gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" /> Generating scenario…
-              </Badge>
-            )}
             {open && !data.prepStartedAt && (
               <Button
                 size="sm"
@@ -208,11 +201,7 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
         <Card className="border-primary/30 bg-gradient-to-br from-background via-background to-primary/5">
           <CardContent className="p-8 flex flex-col items-center gap-4 text-center">
             <Badge variant={open ? "default" : "secondary"} className="gap-1">
-              {generating ? (
-                <><Loader2 className="h-3 w-3 animate-spin" /> Preparing scenario…</>
-              ) : scenarioFailed ? (
-                <><CircleSlash className="h-3 w-3" /> Scenario failed — close and retry</>
-              ) : open ? (
+              {open ? (
                 <><CircleDot className="h-3 w-3" /> Session Open</>
               ) : (
                 <><CircleSlash className="h-3 w-3" /> Session Closed</>

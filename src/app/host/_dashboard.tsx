@@ -91,10 +91,12 @@ export function HostDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ eventCode }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Failed to create session.");
-      }
+      const text = await res.text();
+      const jsonStr = text.replace(/^\s+/, "").trim();
+      const jsonStart = jsonStr.indexOf("{");
+      if (jsonStart === -1) throw new Error("Failed to create session.");
+      const data = JSON.parse(jsonStr.substring(jsonStart));
+      if (data.error) throw new Error(data.error);
       return data as { sessionId: string; code: string };
     },
     onSettled: () => {

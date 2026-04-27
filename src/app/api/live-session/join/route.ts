@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Game code not found." }, { status: 404 });
   }
-  if (session.status !== "open" && session.status !== "generating") {
+  if (session.status !== "open") {
     return NextResponse.json({ error: "This session is closed." }, { status: 409 });
   }
 
