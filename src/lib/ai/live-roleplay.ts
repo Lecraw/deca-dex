@@ -239,3 +239,91 @@ ${scoringInstructions}`,
   await messageStream.finalMessage();
   return tryParseJson<RoleplayGrade>(fullText);
 }
+
+export type QuizQuestion = {
+  prompt: string;
+  options: [string, string, string, string];
+  correctIndex: number;
+};
+
+export type SanitizedQuizQuestion = {
+  prompt: string;
+  options: [string, string, string, string];
+};
+
+export function sanitizeQuiz(questions: QuizQuestion[]): SanitizedQuizQuestion[] {
+  return questions.map((q) => ({ prompt: q.prompt, options: q.options }));
+}
+
+/**
+ * Generate 10 multiple-choice knowledge questions for a DECA event's cluster.
+ * Returns null on parse failure.
+ */
+export async function generateQuiz(event: {
+  code: string;
+  name: string;
+  cluster: string;
+  description: string;
+}): Promise<QuizQuestion[] | null> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 2500,
+    system: `You are a DECA cluster exam writer for the ${event.cluster.replace(/_/g, " ")} career cluster.
+
+Event context: ${event.name} (${event.code}). ${event.description.substring(0, 400)}
+
+Generate exactly 10 multiple-choice questions in the style of real DECA cluster exam questions. Cover core concepts, applied business knowledge, terminology, and scenario reasoning relevant to ${event.name}.
+
+Rules:
+- Each question has exactly 4 options, one clearly correct.
+- Distractors must be plausible.
+- Vary difficulty across the 10 questions.
+- Do not reference DECA, the student, or "the exam" in question text.
+
+Return ONLY a JSON object (no markdown, no code blocks):
+{"questions":[{"prompt":"...","options":["A","B","C","D"],"correctIndex":0}]}
+
+correctIndex is 0-3 (zero-based).`,
+    messages: [
+      {
+        role: "user",
+        content: `Generate 10 multiple-choice questions for the ${event.cluster.replace(/_/g, " ")} cluster, calibrated to ${event.name} (${event.code}).`,
+      },
+    ],
+  });
+
+  const textBlock = response.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") return null;
+
+  const parsed = tryParseJson<{ questions?: QuizQuestion[] }>(textBlock.text);
+  if (!parsed?.questions || !Array.isArray(parsed.questions)) return null;
+
+  const valid = parsed.questions.filter(
+    (q): q is QuizQuestion =>
+      typeof q?.prompt === "string" &&
+      Array.isArray(q.options) &&
+      q.options.length === 4 &&
+      q.options.every((o) => typeof o === "string") &&
+      typeof q.correctIndex === "number" &&
+      q.correctIndex >= 0 &&
+      q.correctIndex <= 3
+  );
+
+  if (valid.length < 10) return null;
+  return valid.slice(0, 10);
+}
+
+export function gradeQuiz(
+  questions: QuizQuestion[],
+  userAnswers: number[]
+): { quizScore: number; correctAnswers: number[] } {
+  const correctAnswers = questions.map((q) => q.correctIndex);
+  let correct = 0;
+  for (let i = 0; i < questions.length; i++) {
+    if (userAnswers[i] === questions[i].correctIndex) correct += 1;
+  }
+  const quizScore = questions.length === 0 ? 0 : (correct / questions.length) * 100;
+  return { quizScore, correctAnswers };
+}

@@ -28,6 +28,7 @@ export async function GET(_req: NextRequest, ctx: RouteParams) {
     eventName?: string;
     scenario?: string;
     performanceIndicators?: string[];
+    roleplayStartedAt?: string | null;
   } = {};
   try {
     scenario = JSON.parse(session.scenarioJson);
@@ -45,6 +46,7 @@ export async function GET(_req: NextRequest, ctx: RouteParams) {
     eventName: scenario.eventName ?? session.eventCode,
     scenario: scenario.scenario ?? "",
     performanceIndicators: scenario.performanceIndicators ?? [],
+    roleplayStartedAt: scenario.roleplayStartedAt ?? null,
     participants: session.participants.map((p) => ({
       id: p.id,
       email: p.email,
@@ -55,6 +57,60 @@ export async function GET(_req: NextRequest, ctx: RouteParams) {
       completedAt: p.completedAt,
     })),
   });
+}
+
+export async function POST(req: NextRequest, ctx: RouteParams) {
+  if (!(await readHost())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { sessionId } = await ctx.params;
+
+  let body: { action?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (body.action !== "start_roleplay") {
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  }
+
+  const existing = await prisma.liveSession.findUnique({ where: { id: sessionId } });
+  if (!existing) {
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+  if (existing.status !== "open") {
+    return NextResponse.json(
+      { error: "Session is not open." },
+      { status: 409 }
+    );
+  }
+
+  let scenario: Record<string, unknown> = {};
+  try {
+    scenario = JSON.parse(existing.scenarioJson);
+  } catch {
+    return NextResponse.json(
+      { error: "Scenario data is corrupted." },
+      { status: 500 }
+    );
+  }
+
+  if (scenario.roleplayStartedAt) {
+    return NextResponse.json({ roleplayStartedAt: scenario.roleplayStartedAt });
+  }
+
+  const startedAt = new Date().toISOString();
+  scenario.roleplayStartedAt = startedAt;
+
+  await prisma.liveSession.update({
+    where: { id: sessionId },
+    data: { scenarioJson: JSON.stringify(scenario) },
+  });
+
+  return NextResponse.json({ roleplayStartedAt: startedAt });
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteParams) {

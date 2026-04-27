@@ -16,6 +16,7 @@ import {
   Loader2,
   Trophy,
   Users,
+  Play,
 } from "lucide-react";
 
 const logoMaskStyle: React.CSSProperties = {
@@ -50,6 +51,7 @@ type SessionDetail = {
   closedAt: string | null;
   scenario: string;
   performanceIndicators: string[];
+  roleplayStartedAt: string | null;
   participants: Participant[];
 };
 
@@ -79,6 +81,24 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["host-session", sessionId] });
       qc.invalidateQueries({ queryKey: ["host-sessions"] });
+    },
+  });
+
+  const startRoleplay = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/host/session/${sessionId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start_roleplay" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to start roleplay");
+      }
+      return res.json();
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["host-session", sessionId] });
     },
   });
 
@@ -130,6 +150,24 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
                 <Download className="h-3.5 w-3.5 mr-1.5" /> CSV
               </a>
             </Button>
+            {open && !data.roleplayStartedAt && (
+              <Button
+                size="sm"
+                onClick={() => startRoleplay.mutate()}
+                disabled={startRoleplay.isPending || data.participants.length === 0}
+              >
+                {startRoleplay.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <><Play className="h-3.5 w-3.5 mr-1.5" /> Start Roleplay for Everyone</>
+                )}
+              </Button>
+            )}
+            {data.roleplayStartedAt && (
+              <Badge variant="outline" className="gap-1">
+                <Play className="h-3 w-3" /> Roleplay started
+              </Badge>
+            )}
             {open && (
               <Button
                 size="sm"
@@ -147,6 +185,14 @@ export function HostSessionView({ sessionId }: { sessionId: string }) {
           </div>
         </div>
       </header>
+
+      {startRoleplay.isError && (
+        <div className="max-w-6xl mx-auto px-6 mt-4">
+          <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3">
+            {startRoleplay.error instanceof Error ? startRoleplay.error.message : "Failed to start roleplay."}
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Code block */}

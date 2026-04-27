@@ -28,6 +28,11 @@ export interface RoleplayMessage {
   timestamp: string;
 }
 
+export interface QuizQuestionView {
+  prompt: string;
+  options: [string, string, string, string];
+}
+
 export interface RoleplaySessionData {
   id: string;
   eventCode: string;
@@ -40,6 +45,9 @@ export interface RoleplaySessionData {
   messages: RoleplayMessage[];
   completed: boolean;
   score: RoleplayScore | null;
+  roleplayStartedAt?: string | null;
+  quizQuestions?: QuizQuestionView[] | null;
+  quizSubmitted?: boolean;
 }
 
 export interface RoleplayScore {
@@ -59,19 +67,29 @@ export interface RoleplayScore {
   }>;
   strengths?: string[];
   improvements?: string[];
+  quizQuestions?: QuizQuestionView[];
+}
+
+export interface QuizResult {
+  roleplayScore: number;
+  quizScore: number;
+  totalScore: number;
+  correctAnswers: number[];
+  userAnswers: number[];
 }
 
 interface Props {
   sessionData: RoleplaySessionData | undefined;
   isLoading: boolean;
   onEndSession: (fullTranscript: string) => Promise<RoleplayScore>;
+  onSubmitQuiz?: (answers: number[]) => Promise<QuizResult>;
   backHref: string;
   newHref: string;
   newLabel?: string;
   headerSubtitle?: string;
 }
 
-type Phase = "prep" | "presenting" | "followup" | "results";
+type Phase = "prep" | "presenting" | "followup" | "quiz" | "results";
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -107,6 +125,7 @@ export function RoleplaySessionUI({
   sessionData,
   isLoading,
   onEndSession,
+  onSubmitQuiz,
   backHref,
   newHref,
   newLabel = "New Roleplay",
@@ -122,6 +141,11 @@ export function RoleplaySessionUI({
   const [followUpIndex, setFollowUpIndex] = useState(0);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionView[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>([]);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
+  const [quizSubmitting, setQuizSubmitting] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -131,6 +155,30 @@ export function RoleplaySessionUI({
   useEffect(() => {
     if (!getSpeechRecognition()) setSpeechSupported(false);
   }, []);
+
+  // Host clicked "Start Roleplay for Everyone" — auto-jump from prep to
+  // presenting so all participants begin at once.
+  useEffect(() => {
+    if (sessionData?.roleplayStartedAt && phase === "prep") {
+      setPhase("presenting");
+    }
+  }, [sessionData?.roleplayStartedAt, phase]);
+
+  // Rehydrate the quiz if the participant refreshes after the roleplay was
+  // graded but before they submitted answers.
+  useEffect(() => {
+    if (
+      sessionData?.quizQuestions &&
+      sessionData.quizQuestions.length > 0 &&
+      !sessionData.quizSubmitted &&
+      phase !== "quiz" &&
+      phase !== "results"
+    ) {
+      setQuizQuestions(sessionData.quizQuestions);
+      setQuizAnswers(new Array(sessionData.quizQuestions.length).fill(null));
+      setPhase("quiz");
+    }
+  }, [sessionData?.quizQuestions, sessionData?.quizSubmitted, phase]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -278,8 +326,33 @@ export function RoleplaySessionUI({
 
   const endSession = useMutation({
     mutationFn: (fullTranscript: string) => onEndSession(fullTranscript),
-    onSuccess: () => setPhase("results"),
+    onSuccess: (score) => {
+      if (onSubmitQuiz && score.quizQuestions && score.quizQuestions.length > 0) {
+        setQuizQuestions(score.quizQuestions);
+        setQuizAnswers(new Array(score.quizQuestions.length).fill(null));
+        setPhase("quiz");
+      } else {
+        setPhase("results");
+      }
+    },
   });
+
+  const submitQuizAnswers = async () => {
+    if (!onSubmitQuiz) return;
+    const answers = quizAnswers.filter((a): a is number => a !== null);
+    if (answers.length !== quizQuestions.length) return;
+    setQuizSubmitting(true);
+    setQuizSubmitError(null);
+    try {
+      const result = await onSubmitQuiz(answers);
+      setQuizResult(result);
+      setPhase("results");
+    } catch (err) {
+      setQuizSubmitError(err instanceof Error ? err.message : "Failed to submit quiz.");
+    } finally {
+      setQuizSubmitting(false);
+    }
+  };
 
   const handleStartPresenting = () => {
     setPhase("presenting");
@@ -645,21 +718,141 @@ export function RoleplaySessionUI({
         </div>
       )}
 
+      {/* QUIZ */}
+      {phase === "quiz" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> Knowledge Check
+              </CardTitle>
+              <CardDescription>
+                Answer all {quizQuestions.length} questions. Your quiz score averages with your roleplay score.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>
+                  {quizAnswers.filter((a) => a !== null).length} of {quizQuestions.length} answered
+                </span>
+                <Progress
+                  value={
+                    quizQuestions.length === 0
+                      ? 0
+                      : (quizAnswers.filter((a) => a !== null).length / quizQuestions.length) * 100
+                  }
+                  className="h-2 flex-1"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {quizQuestions.map((q, qi) => (
+            <Card key={qi}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">
+                  <span className="text-muted-foreground mr-2">{qi + 1}.</span>
+                  {q.prompt}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-2">
+                  {q.options.map((opt, oi) => {
+                    const selected = quizAnswers[qi] === oi;
+                    return (
+                      <button
+                        key={oi}
+                        type="button"
+                        onClick={() => {
+                          setQuizAnswers((prev) => {
+                            const next = [...prev];
+                            next[qi] = oi;
+                            return next;
+                          });
+                        }}
+                        className={`text-left text-sm rounded-lg border px-3 py-2 transition ${
+                          selected
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:bg-accent/30"
+                        }`}
+                      >
+                        <span className="text-muted-foreground mr-2">
+                          {String.fromCharCode(65 + oi)}.
+                        </span>
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {quizSubmitError && (
+            <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{quizSubmitError}</span>
+            </div>
+          )}
+
+          <Button
+            className="w-full"
+            disabled={
+              quizSubmitting ||
+              quizAnswers.some((a) => a === null) ||
+              quizQuestions.length === 0
+            }
+            onClick={submitQuizAnswers}
+          >
+            {quizSubmitting ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting…</>
+            ) : (
+              <><CheckCircle2 className="h-4 w-4 mr-2" /> Submit Quiz</>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* RESULTS */}
       {phase === "results" && score && (
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-5xl font-bold">
-                {score.totalScore}
-                <span className="text-2xl text-muted-foreground">/100</span>
-              </CardTitle>
-              <CardDescription>Roleplay Performance Score</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Progress value={score.totalScore} className="h-3" />
-            </CardContent>
-          </Card>
+          {quizResult ? (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-5xl font-bold">
+                  {quizResult.totalScore}
+                  <span className="text-2xl text-muted-foreground">/100</span>
+                </CardTitle>
+                <CardDescription>Final Score (Roleplay + Quiz)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Progress value={quizResult.totalScore} className="h-3" />
+                <div className="grid grid-cols-2 gap-3 text-center text-sm">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-2xl font-semibold">{quizResult.roleplayScore}</p>
+                    <p className="text-xs text-muted-foreground">Roleplay</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-2xl font-semibold">{quizResult.quizScore}</p>
+                    <p className="text-xs text-muted-foreground">Quiz</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-5xl font-bold">
+                  {score.totalScore}
+                  <span className="text-2xl text-muted-foreground">/100</span>
+                </CardTitle>
+                <CardDescription>Roleplay Performance Score</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Progress value={score.totalScore} className="h-3" />
+              </CardContent>
+            </Card>
+          )}
 
           {score.overallFeedback && (
             <Card>

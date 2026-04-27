@@ -10,6 +10,7 @@ import {
   RoleplaySessionUI,
   type RoleplaySessionData,
   type RoleplayScore,
+  type QuizResult,
 } from "@/components/roleplay/RoleplaySessionUI";
 
 type LiveSessionResponse = RoleplaySessionData & { sessionStatus: string };
@@ -30,17 +31,38 @@ export default function PlaySessionPage() {
       return res.json();
     },
     retry: false,
+    // Poll while in the lobby/prep phase so we pick up when the host clicks
+    // "Start Roleplay" and can transition everyone into the presenting phase.
+    refetchInterval: (query) => {
+      const d = query.state.data as LiveSessionResponse | undefined;
+      if (!d) return 3000;
+      if (d.completed) return false;
+      if (d.roleplayStartedAt) return false;
+      return 3000;
+    },
   });
 
   useEffect(() => {
-    // Only redirect once grading has actually finished (score is populated).
-    // While grading is in-flight, the backend temporarily marks `completed:true`
-    // to claim an atomic submission slot — redirecting on that intermediate
-    // state would ping-pong with the results page.
-    if (data?.completed && data.score) {
+    // Redirect to the results page only once the participant has both
+    // completed grading AND finished any pending quiz. Otherwise stay so
+    // they can take the knowledge check.
+    if (
+      data?.completed &&
+      data.score &&
+      (!data.quizQuestions ||
+        data.quizQuestions.length === 0 ||
+        data.quizSubmitted)
+    ) {
       router.replace(`/play/${participantId}/results`);
     }
-  }, [data?.completed, data?.score, participantId, router]);
+  }, [
+    data?.completed,
+    data?.score,
+    data?.quizQuestions,
+    data?.quizSubmitted,
+    participantId,
+    router,
+  ]);
 
   const onEndSession = async (fullTranscript: string): Promise<RoleplayScore> => {
     const res = await fetch("/api/live-session/roleplay", {
@@ -60,6 +82,24 @@ export default function PlaySessionPage() {
     if (parsed.error) throw new Error(parsed.error);
     router.prefetch(`/play/${participantId}/results`);
     return parsed as RoleplayScore;
+  };
+
+  const onSubmitQuiz = async (answers: number[]): Promise<QuizResult> => {
+    const res = await fetch("/api/live-session/roleplay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "submit_quiz",
+        participantId,
+        answers,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error || "Failed to submit quiz.");
+    }
+    router.prefetch(`/play/${participantId}/results`);
+    return data as QuizResult;
   };
 
   if (error) {
@@ -106,6 +146,7 @@ export default function PlaySessionPage() {
         sessionData={data}
         isLoading={isLoading}
         onEndSession={onEndSession}
+        onSubmitQuiz={onSubmitQuiz}
         backHref="/"
         newHref={`/play/${participantId}/results`}
         newLabel="View Leaderboard"
