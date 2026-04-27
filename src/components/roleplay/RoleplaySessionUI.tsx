@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
+import { Avatar } from "@/components/live/Avatar";
+import { PREP_DURATION_SECONDS } from "@/lib/live-session-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +49,9 @@ export interface RoleplaySessionData {
   score: RoleplayScore | null;
   quizQuestions?: QuizQuestionView[] | null;
   quizSubmitted?: boolean;
+  prepStartedAt?: string | null;
+  prepDurationSeconds?: number;
+  displayName?: string;
 }
 
 export interface RoleplayScore {
@@ -87,7 +92,7 @@ interface Props {
   headerSubtitle?: string;
 }
 
-type Phase = "prep" | "presenting" | "followup" | "quiz" | "results";
+type Phase = "lobby" | "prep" | "presenting" | "followup" | "quiz" | "results";
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -129,12 +134,18 @@ export function RoleplaySessionUI({
   newLabel = "New Roleplay",
   headerSubtitle,
 }: Props) {
-  const [phase, setPhase] = useState<Phase>("prep");
+  // Live-session pages pass `prepStartedAt` (string | null). Standalone roleplay
+  // pages omit it, in which case we fall back to today's behavior (start in prep).
+  const lobbyEnabled =
+    sessionData?.prepStartedAt !== undefined && !sessionData.completed;
+  const initialPhase: Phase =
+    lobbyEnabled && !sessionData?.prepStartedAt ? "lobby" : "prep";
+  const [phase, setPhase] = useState<Phase>(initialPhase);
   const [messages, setMessages] = useState<RoleplayMessage[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
-  const [prepTimeLeft, setPrepTimeLeft] = useState(600);
+  const [prepTimeLeft, setPrepTimeLeft] = useState(PREP_DURATION_SECONDS);
   const [presentTimeLeft, setPresentTimeLeft] = useState(600);
   const [followUpIndex, setFollowUpIndex] = useState(0);
   const [speechSupported, setSpeechSupported] = useState(true);
@@ -157,21 +168,38 @@ export function RoleplaySessionUI({
   }, [messages, interimTranscript]);
 
   useEffect(() => {
-    if (phase === "prep") {
-      prepTimerRef.current = setInterval(() => {
-        setPrepTimeLeft((prev) => {
-          if (prev <= 1) {
-            if (prepTimerRef.current) clearInterval(prepTimerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (phase !== "prep") return;
+
+    const duration = sessionData?.prepDurationSeconds ?? PREP_DURATION_SECONDS;
+    const startedAt = sessionData?.prepStartedAt
+      ? new Date(sessionData.prepStartedAt).getTime()
+      : null;
+
+    const compute = () => {
+      if (!startedAt) {
+        setPrepTimeLeft((prev) => Math.max(0, prev - 1));
+        return;
+      }
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setPrepTimeLeft(Math.max(0, duration - elapsed));
+    };
+
+    if (startedAt) {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setPrepTimeLeft(Math.max(0, duration - elapsed));
     }
+
+    prepTimerRef.current = setInterval(compute, 1000);
     return () => {
       if (prepTimerRef.current) clearInterval(prepTimerRef.current);
     };
-  }, [phase]);
+  }, [phase, sessionData?.prepStartedAt, sessionData?.prepDurationSeconds]);
+
+  useEffect(() => {
+    if (phase === "lobby" && sessionData?.prepStartedAt) {
+      setPhase("prep");
+    }
+  }, [phase, sessionData?.prepStartedAt]);
 
   useEffect(() => {
     if (phase === "presenting" || phase === "followup") {
@@ -489,6 +517,29 @@ export function RoleplaySessionUI({
           </div>
         )}
       </div>
+
+      {/* LOBBY */}
+      {phase === "lobby" && (
+        <div className="max-w-md mx-auto text-center py-16 space-y-6">
+          {sessionData.displayName && (
+            <Avatar
+              seed={sessionData.id}
+              displayName={sessionData.displayName}
+              size="lg"
+              className="mx-auto"
+            />
+          )}
+          <div className="space-y-1">
+            <p className="text-base font-semibold">
+              You&apos;re in{sessionData.displayName ? `, ${sessionData.displayName}` : ""}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Waiting for the host to start the session…
+            </p>
+          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+        </div>
+      )}
 
       {/* PREP */}
       {phase === "prep" && (
