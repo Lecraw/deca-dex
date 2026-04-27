@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { readParticipant } from "@/lib/live-session";
+import { PREP_DURATION_SECONDS } from "@/lib/live-session-constants";
 import {
   gradeRoleplay,
   generateQuiz,
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
       quizSubmitted: !!participant.quizAnswersJson,
       sessionStatus: participant.session.status,
       prepStartedAt: participant.session.prepStartedAt,
-      prepDurationSeconds: 600,
+      prepDurationSeconds: PREP_DURATION_SECONDS,
       displayName: participant.displayName,
     }),
     { headers: { "Content-Type": "application/json" } }
